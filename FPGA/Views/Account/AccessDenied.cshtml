@@ -1,0 +1,15 @@
+@{
+    ViewData["Title"] = "Доступ запрещён";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<section class="auth-section">
+    <div class="auth-box" style="text-align:center;">
+        <div style="font-size:3rem; margin-bottom:1rem;">🔒</div>
+        <h1 style="font-size:1.5rem; margin-bottom:0.5rem;">Доступ запрещён</h1>
+        <p style="color:var(--text-secondary); margin-bottom:2rem;">
+            У вас нет прав для просмотра этой страницы.
+        </p>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline">← На главную</a>
+    </div>
+</section>

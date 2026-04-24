@@ -1,0 +1,63 @@
+@model FPGA.Models.RegisterViewModel
+@{
+    ViewData["Title"] = "Регистрация";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<section class="auth-section">
+    <div class="auth-box">
+        <div class="auth-header">
+            <div class="brand-icon" style="margin: 0 auto 1rem; width:48px; height:48px; font-size:1.2rem;">F</div>
+            <h1>Создать аккаунт</h1>
+            <p>Начните своё путешествие в мир FPGA</p>
+        </div>
+
+        <form asp-action="Register" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="form-group">
+                <label asp-for="Username">Имя пользователя</label>
+                <input asp-for="Username" class="form-input" placeholder="your_username" autocomplete="username" />
+                <span asp-validation-for="Username" class="field-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Email">Email</label>
+                <input asp-for="Email" type="email" class="form-input" placeholder="you@example.com" autocomplete="email" />
+                <span asp-validation-for="Email" class="field-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Password">Пароль</label>
+                <input asp-for="Password" type="password" class="form-input" placeholder="Минимум 6 символов" autocomplete="new-password" />
+                <span asp-validation-for="Password" class="field-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="ConfirmPassword">Повторите пароль</label>
+                <input asp-for="ConfirmPassword" type="password" class="form-input" placeholder="••••••••" autocomplete="new-password" />
+                <span asp-validation-for="ConfirmPassword" class="field-error"></span>
+            </div>
+
+            <div asp-validation-summary="ModelOnly" class="alert alert-error"></div>
+
+            <div class="role-info">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>Новые пользователи регистрируются как <strong>Обучающийся</strong>. Повышение роли — через администратора.</span>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; margin-top:0.5rem;">
+                Создать аккаунт
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <span>Уже есть аккаунт?</span>
+            <a asp-controller="Account" asp-action="Login">Войти</a>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
