@@ -1,0 +1,36 @@
+@model FPGA.Models.PracticeProblem
+@{
+    ViewData["Title"] = $"Solve: {Model.Title}";
+}
+
+<section class="section practice-section" style="padding-top:7rem;">
+    <div class="container" style="max-width:800px;">
+        <div style="margin-bottom:1.5rem;">
+            <a asp-controller="Practice" asp-action="Index" style="color:var(--text-secondary);font-size:0.9rem;">← Back to Problems</a>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;flex-wrap:wrap;gap:1rem;">
+            <h1 style="font-size:1.8rem;font-weight:700;">@Model.Title</h1>
+            @{
+                var diffClass = Model.Difficulty.ToLower() switch {
+                    "beginner"     => "badge-beginner",
+                    "intermediate" => "badge-intermediate",
+                    _              => "badge-advanced"
+                };
+            }
+            <span class="badge @diffClass" style="font-size:0.9rem;padding:0.3rem 0.9rem;">@Model.Difficulty</span>
+        </div>
+        <div class="component-card" style="padding:2rem;">
+            <p style="color:var(--text-secondary);line-height:1.8;">
+                Write your HDL solution for <strong>@Model.Title</strong> in the editor below.
+                Your design will be automatically verified against test vectors.
+            </p>
+            <div style="margin-top:1.5rem;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:1.25rem;min-height:220px;font-family:var(--font-display);font-size:0.85rem;color:var(--text-secondary);">
+                // Your Verilog / VHDL solution here...
+            </div>
+            <div style="margin-top:1rem;display:flex;gap:1rem;">
+                <button class="btn btn-primary" style="flex:1;">Run Tests</button>
+                <button class="btn btn-outline">Reset</button>
+            </div>
+        </div>
+    </div>
+</section>
