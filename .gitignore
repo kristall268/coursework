@@ -1,0 +1,44 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userprefs
+*.sln.docstates
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+
+# ASP.NET
+wwwroot/lib/
+App_Data/
+
+# Publish output
+publish/
+**/publish/
+
+# Environment & secrets
+appsettings.Development.json
+appsettings.Local.json
+*.pfx
+*.p12
+secrets.json
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# dotnet tools
+.dotnet/
