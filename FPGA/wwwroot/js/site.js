@@ -19,6 +19,21 @@
         });
     }
 
+    // ── User Dropdown ───────────────────────────────────────────────
+    const userMenuBtn  = document.getElementById('userMenuBtn');
+    const userDropdown = document.getElementById('userDropdown');
+
+    if (userMenuBtn && userDropdown) {
+        userMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            userDropdown.classList.toggle('open');
+        });
+
+        document.addEventListener('click', () => {
+            userDropdown.classList.remove('open');
+        });
+    }
+
     // ── Smooth scroll for anchor links ──────────────────────────────
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {

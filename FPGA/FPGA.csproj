@@ -7,4 +7,10 @@
         <RootNamespace>FPGA</RootNamespace>
     </PropertyGroup>
 
+    <ItemGroup>
+      <Folder Include="Services\" />
+      <Folder Include="Views\Account\" />
+      <Folder Include="Views\Admin\" />
+    </ItemGroup>
+
 </Project>
