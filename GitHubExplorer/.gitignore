@@ -1,5 +1,46 @@
+# Build output
 bin/
 obj/
-/packages/
-riderModule.iml
-/_ReSharper.Caches/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userprefs
+*.sln.docstates
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+
+# ASP.NET
+wwwroot/lib/
+App_Data/
+
+# Publish output
+publish/
+**/publish/
+
+# Secrets — НИКОГДА не коммитить
+appsettings.Development.json
+appsettings.Local.json
+*.pfx
+*.p12
+secrets.json
+
+# Logs
+logs/
+*.log
+
+# EF Core migrations (опционально — можно убрать если хочешь коммитить миграции)
+# Data/Migrations/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# dotnet tools
+.dotnet/
