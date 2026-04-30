@@ -1,0 +1,486 @@
+@model GitHubExplorer.Models.ViewModels.RepoDetailViewModel
+@{
+    ViewData["Title"]      = Model.Repo.FullName;
+    ViewData["ActivePage"] = "Explore";
+    var repo = Model.Repo;
+}
+
+@section Styles {
+<style>
+/* ── Repo header ── */
+.repo-header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 0 24px;
+}
+.repo-header-top {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+.repo-breadcrumb {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 20px; font-weight: 700; letter-spacing: -0.4px;
+    flex-wrap: wrap;
+}
+.repo-breadcrumb img {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1px solid var(--border);
+}
+.repo-breadcrumb .owner-link { color: var(--text2); font-weight: 500; }
+.repo-breadcrumb .owner-link:hover { color: var(--accent); }
+.repo-breadcrumb .sep { color: var(--text3); font-weight: 300; }
+.repo-breadcrumb .repo-name { color: var(--text); }
+.repo-header-meta {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    font-size: 12px; color: var(--text2); margin-bottom: 14px;
+}
+.repo-desc-text {
+    font-size: 14px; color: var(--text2); line-height: 1.65;
+    max-width: 780px; margin-bottom: 14px;
+}
+.repo-topics { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.repo-header-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* ── Stats strip ── */
+.stats-strip {
+    display: flex; gap: 0;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden;
+    margin-top: 20px;
+}
+.stat-box {
+    flex: 1; padding: 12px 16px; text-align: center;
+    border-right: 1px solid var(--border);
+    transition: background 0.15s;
+}
+.stat-box:last-child { border-right: none; }
+.stat-box:hover { background: rgba(88,166,255,0.04); }
+.stat-box-val   { font-size: 17px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+.stat-box-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+
+/* ── Main layout ── */
+.detail-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 28px;
+    padding: 28px 0 56px;
+    align-items: start;
+}
+
+/* ── README ── */
+.readme-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden;
+}
+.readme-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    font-size: 13px; font-weight: 600; color: var(--text);
+    background: var(--bg3);
+}
+.readme-body {
+    padding: 24px 28px;
+    color: var(--text2); line-height: 1.75; font-size: 14px;
+    max-height: 700px; overflow-y: auto;
+    white-space: pre-wrap; word-break: break-word;
+    font-family: var(--mono);
+}
+.readme-body::-webkit-scrollbar { width: 4px; }
+.readme-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.readme-empty {
+    padding: 40px 28px; text-align: center; color: var(--text3); font-size: 13px;
+}
+
+/* ── Sidebar cards ── */
+.detail-sidebar { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 80px; }
+.sidebar-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.sidebar-title { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+
+/* ── Language bars ── */
+.lang-bar-wrap { margin-bottom: 10px; }
+.lang-bar-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+.lang-bar-row span:first-child { display: flex; align-items: center; gap: 5px; }
+.lang-bar-track { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+.lang-bar-fill  { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+.lang-strip { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
+.lang-strip-seg { height: 100%; transition: width 0.6s ease; }
+
+/* ── Contributors ── */
+.contributors-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.contributor {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    text-decoration: none; transition: opacity 0.15s;
+}
+.contributor:hover { opacity: 0.75; text-decoration: none; }
+.contributor img { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); }
+.contributor-name { font-size: 9px; color: var(--text3); max-width: 44px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.contributor-count { font-size: 9px; color: var(--text3); }
+
+/* ── Info rows ── */
+.info-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 7px 0; border-bottom: 1px solid var(--border);
+    font-size: 12px;
+}
+.info-row:last-child { border-bottom: none; }
+.info-row-label { color: var(--text3); flex-shrink: 0; width: 80px; }
+.info-row-val   { color: var(--text2); word-break: break-all; }
+.info-row-val a { color: var(--accent); }
+.info-row-val a:hover { text-decoration: underline; }
+
+/* ── Similar repos ── */
+.similar-repo {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+    text-decoration: none; transition: padding-left 0.12s;
+}
+.similar-repo:last-child { border-bottom: none; }
+.similar-repo:hover { padding-left: 4px; text-decoration: none; }
+.similar-repo img { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--border); flex-shrink: 0; }
+.similar-repo-info { flex: 1; overflow: hidden; }
+.similar-repo-name { font-size: 12px; font-weight: 600; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.similar-repo-stars { font-size: 10px; color: var(--text3); }
+
+@@media (max-width: 960px) {
+    .detail-layout { grid-template-columns: 1fr; }
+    .detail-sidebar { position: static; }
+}
+@@media (max-width: 600px) {
+    .stats-strip {
+        flex-wrap: wrap;
+    }
+
+    .stat-box {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .stat-box:last-child {
+        border-bottom: none;
+    }
+
+
+}
+</style>
+}
+
+<!-- ── Repo header ── -->
+<div class="repo-header">
+    <div class="container">
+
+        <!-- Breadcrumb + actions -->
+        <div class="repo-header-top">
+            <div class="repo-breadcrumb">
+                @if (!string.IsNullOrWhiteSpace(repo.OwnerAvatarUrl))
+                {
+                    <img src="@repo.OwnerAvatarUrl" alt="@repo.Owner" loading="lazy" />
+                }
+                <a class="owner-link" asp-controller="User" asp-action="Profile"
+                   asp-route-login="@repo.Owner">@repo.Owner</a>
+                <span class="sep">/</span>
+                <span class="repo-name">@repo.Name</span>
+                @if (repo.IsFork)
+                {
+                    <span class="tag" style="font-size:10px">fork</span>
+                }
+                @if (repo.IsPrivate)
+                {
+                    <span class="tag" style="font-size:10px;background:rgba(248,81,73,0.1);border-color:rgba(248,81,73,0.3);color:var(--danger)">private</span>
+                }
+            </div>
+
+            <div class="repo-header-actions">
+                @if (!string.IsNullOrWhiteSpace(repo.HtmlUrl))
+                {
+                    <a class="btn btn-outline" href="@repo.HtmlUrl" target="_blank" rel="noopener">
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                        </svg>
+                        View on GitHub ↗
+                    </a>
+                }
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <form asp-controller="Account" asp-action="ToggleFavorite" method="post" style="display:inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="owner"       value="@repo.Owner" />
+                        <input type="hidden" name="name"        value="@repo.Name" />
+                        <input type="hidden" name="description" value="@repo.Description" />
+                        <input type="hidden" name="language"    value="@repo.Language" />
+                        <input type="hidden" name="stars"       value="@repo.Stars" />
+                        <input type="hidden" name="htmlUrl"     value="@repo.HtmlUrl" />
+                        <input type="hidden" name="avatarUrl"   value="@repo.OwnerAvatarUrl" />
+                        <button type="submit" class="btn btn-outline">
+                            🔖 Save to favorites
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <!-- Meta: language · license · created -->
+        <div class="repo-header-meta">
+            @if (!string.IsNullOrWhiteSpace(repo.Language))
+            {
+                <span style="display:flex;align-items:center;gap:5px">
+                    <span class="lang-dot" style="background:@(repo.LanguageColor ?? "#8b949e")"></span>
+                    @repo.Language
+                </span>
+                <span style="color:var(--border)">·</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(repo.License))
+            {
+                <span>@repo.License</span>
+                <span style="color:var(--border)">·</span>
+            }
+            <span>Created @repo.CreatedAt.ToString("MMM d, yyyy")</span>
+            <span style="color:var(--border)">·</span>
+            <span>Updated @repo.UpdatedAgo</span>
+        </div>
+
+        <!-- Description -->
+        @if (!string.IsNullOrWhiteSpace(repo.Description))
+        {
+            <p class="repo-desc-text">@repo.Description</p>
+        }
+
+        <!-- Topics -->
+        @if (repo.Topics.Count > 0)
+        {
+            <div class="repo-topics">
+                @foreach (var topic in repo.Topics)
+                {
+                    <a class="tag"
+                       asp-controller="Explore" asp-action="Index"
+                       asp-route-topic="@topic"
+                       style="text-decoration:none">@topic</a>
+                }
+            </div>
+        }
+
+        <!-- Stats strip -->
+        <div class="stats-strip">
+            <div class="stat-box">
+                <div class="stat-box-val">
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="var(--warning)" style="vertical-align:-1px;margin-right:3px">
+                        <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/>
+                    </svg>
+                    @repo.StarsFormatted
+                </div>
+                <div class="stat-box-label">Stars</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-box-val">@(repo.Forks >= 1000 ? $"{repo.Forks/1000.0:F1}k" : repo.Forks.ToString())</div>
+                <div class="stat-box-label">Forks</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-box-val" style="color:@(repo.OpenIssues > 0 ? "var(--danger)" : "var(--text)")">
+                    @repo.OpenIssues
+                </div>
+                <div class="stat-box-label">Open Issues</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-box-val">@repo.Watchers</div>
+                <div class="stat-box-label">Watchers</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-box-val">@Model.Contributors.Count</div>
+                <div class="stat-box-label">Contributors</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Main content ── -->
+<div class="container">
+    <div class="detail-layout">
+
+        <!-- README -->
+        <main>
+            <div class="readme-card">
+                <div class="readme-header">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="var(--text2)">
+                        <path d="M0 1.75A.75.75 0 01.75 1h4.253c1.227 0 2.317.59 3 1.501A3.744 3.744 0 0111.006 1h4.245a.75.75 0 01.75.75v10.5a.75.75 0 01-.75.75h-4.507a2.25 2.25 0 00-1.591.659l-.622.621a.75.75 0 01-1.06 0l-.622-.621A2.25 2.25 0 005.258 13H.75a.75.75 0 01-.75-.75zm7.251 10.324l.004-5.073-.002-2.253A2.25 2.25 0 005.003 2.5H1.5v9h3.757a3.75 3.75 0 011.994.574zM8.755 4.75l-.004 7.322a3.752 3.752 0 011.992-.572H14.5v-9h-3.495a2.25 2.25 0 00-2.25 2.25z"/>
+                    </svg>
+                    README
+                    <span style="margin-left:auto;font-size:11px;color:var(--text3);font-weight:400">
+                        @repo.FullName
+                    </span>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Model.ReadmeHtml))
+                {
+                    <div class="readme-body">@Model.ReadmeHtml</div>
+                }
+                else
+                {
+                    <div class="readme-empty">
+                        <svg width="28" height="28" viewBox="0 0 16 16" fill="currentColor" opacity="0.3" style="display:block;margin:0 auto 10px">
+                            <path d="M0 1.75A.75.75 0 01.75 1h4.253c1.227 0 2.317.59 3 1.501A3.744 3.744 0 0111.006 1h4.245a.75.75 0 01.75.75v10.5a.75.75 0 01-.75.75h-4.507a2.25 2.25 0 00-1.591.659l-.622.621a.75.75 0 01-1.06 0l-.622-.621A2.25 2.25 0 005.258 13H.75a.75.75 0 01-.75-.75zm7.251 10.324l.004-5.073-.002-2.253A2.25 2.25 0 005.003 2.5H1.5v9h3.757a3.75 3.75 0 011.994.574zM8.755 4.75l-.004 7.322a3.752 3.752 0 011.992-.572H14.5v-9h-3.495a2.25 2.25 0 00-2.25 2.25z"/>
+                        </svg>
+                        No README available for this repository.
+                    </div>
+                }
+            </div>
+
+            <!-- Similar repos -->
+            @if (Model.SimilarRepos.Count > 0)
+            {
+                <div style="margin-top:20px">
+                    <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:12px">
+                        Similar repositories
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:10px">
+                        @foreach (var similar in Model.SimilarRepos.Take(4))
+                        {
+                            @await Html.PartialAsync("_RepoCard", similar)
+                        }
+                    </div>
+                </div>
+            }
+        </main>
+
+        <!-- Sidebar -->
+        <aside class="detail-sidebar">
+
+            <!-- About -->
+            <div class="sidebar-card">
+                <div class="sidebar-title">
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM0 8a8 8 0 1116 0A8 8 0 010 8zm6.5-.25A.75.75 0 017.25 7h1a.75.75 0 01.75.75v2.75h.25a.75.75 0 010 1.5h-2a.75.75 0 010-1.5h.25v-2h-.25a.75.75 0 01-.75-.75zM8 6a1 1 0 110-2 1 1 0 010 2z"/>
+                    </svg>
+                    About
+                </div>
+
+                <div class="info-row">
+                    <span class="info-row-label">Full name</span>
+                    <span class="info-row-val">
+                        <a href="@repo.HtmlUrl" target="_blank">@repo.FullName ↗</a>
+                    </span>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(repo.Language))
+                {
+                    <div class="info-row">
+                        <span class="info-row-label">Language</span>
+                        <span class="info-row-val" style="display:flex;align-items:center;gap:5px">
+                            <span class="lang-dot" style="background:@(repo.LanguageColor ?? "#8b949e")"></span>
+                            @repo.Language
+                        </span>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(repo.License))
+                {
+                    <div class="info-row">
+                        <span class="info-row-label">License</span>
+                        <span class="info-row-val">@repo.License</span>
+                    </div>
+                }
+                <div class="info-row">
+                    <span class="info-row-label">Created</span>
+                    <span class="info-row-val">@repo.CreatedAt.ToString("MMM d, yyyy")</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-row-label">Updated</span>
+                    <span class="info-row-val">@repo.UpdatedAgo</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-row-label">Fork</span>
+                    <span class="info-row-val">@(repo.IsFork ? "Yes" : "No")</span>
+                </div>
+            </div>
+
+            <!-- Languages -->
+            @if (Model.Languages.Languages.Count > 0)
+            {
+                <div class="sidebar-card">
+                    <div class="sidebar-title">
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0114.25 13H8.06l-2.573 2.573A1.457 1.457 0 013 14.543V13H1.75A1.75 1.75 0 010 11.25zm1.75-.25a.25.25 0 00-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 01.75.75v2.19l2.72-2.72a.749.749 0 01.53-.22h6.5a.25.25 0 00.25-.25v-9.5a.25.25 0 00-.25-.25z"/>
+                        </svg>
+                        Languages
+                    </div>
+
+                    <!-- Color strip -->
+                    @{
+                        var langColors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["C#"] = "#178600", ["JavaScript"] = "#f1e05a", ["TypeScript"] = "#3178c6",
+                            ["Python"] = "#3572A5", ["Go"] = "#00ADD8", ["Rust"] = "#dea584",
+                            ["Java"] = "#b07219", ["Kotlin"] = "#A97BFF", ["Swift"] = "#F05138",
+                            ["C"] = "#555555", ["C++"] = "#f34b7d", ["Ruby"] = "#701516",
+                            ["PHP"] = "#4F5D95", ["Dart"] = "#00B4AB", ["Shell"] = "#89e051",
+                            ["HTML"] = "#e34c26", ["CSS"] = "#563d7c"
+                        };
+                    }
+                    <div class="lang-strip" style="margin-bottom:12px">
+                        @foreach (var lang in Model.Languages.Languages.Take(8))
+                        {
+                            var pct = Model.Languages.GetPercent(lang.Key);
+                            var col = langColors.TryGetValue(lang.Key, out var c) ? c : "#8b949e";
+                            <div class="lang-strip-seg"
+                                 style="width:@pct%;background:@col"
+                                 title="@lang.Key @pct%"></div>
+                        }
+                    </div>
+
+                    @foreach (var lang in Model.Languages.Languages.Take(8))
+                    {
+                        var pct = Model.Languages.GetPercent(lang.Key);
+                        var col = langColors.TryGetValue(lang.Key, out var c2) ? c2 : "#8b949e";
+                        <div class="lang-bar-wrap">
+                            <div class="lang-bar-row">
+                                <span>
+                                    <span class="lang-dot" style="background:@col"></span>
+                                    @lang.Key
+                                </span>
+                                <span style="color:var(--text3)">@pct%</span>
+                            </div>
+                            <div class="lang-bar-track">
+                                <div class="lang-bar-fill" style="width:@pct%;background:@col"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- Contributors -->
+            @if (Model.Contributors.Count > 0)
+            {
+                <div class="sidebar-card">
+                    <div class="sidebar-title">
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M2 5.5a3.5 3.5 0 115.898 2.549 5.508 5.508 0 013.034 4.084.75.75 0 11-1.482.235 4 4 0 00-7.9 0 .75.75 0 01-1.482-.236A5.507 5.507 0 013.102 8.05 3.493 3.493 0 012 5.5zM11 4a3.001 3.001 0 012.22 5.018 5.01 5.01 0 012.56 3.012.749.749 0 01-.885.954.752.752 0 01-.549-.514 3.507 3.507 0 00-2.522-2.372.75.75 0 01-.574-.73v-.352a.75.75 0 01.416-.672A1.5 1.5 0 0011 5.5.75.75 0 0111 4zm-5.5-.5a2 2 0 100 4 2 2 0 000-4z"/>
+                        </svg>
+                        Top Contributors
+                    </div>
+                    <div class="contributors-grid">
+                        @foreach (var c in Model.Contributors)
+                        {
+                            <a class="contributor"
+                               asp-controller="User" asp-action="Profile"
+                               asp-route-login="@c.Login"
+                               title="@c.Login — @c.Contributions commits">
+                                <img src="@c.AvatarUrl" alt="@c.Login" loading="lazy"
+                                     onerror="this.style.display='none'" />
+                                <span class="contributor-name">@c.Login</span>
+                                <span class="contributor-count">@c.Contributions</span>
+                            </a>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Compare shortcut -->
+            <div class="sidebar-card" style="text-align:center;border-color:rgba(88,166,255,0.2)">
+                <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Compare this repo with another</div>
+                <a class="btn btn-outline" style="width:100%;justify-content:center;font-size:12px"
+                   asp-controller="Compare" asp-action="Index"
+                   asp-route-repo1="@repo.FullName">
+                    ⚖️ Compare →
+                </a>
+            </div>
+
+        </aside>
+    </div>
+</div>

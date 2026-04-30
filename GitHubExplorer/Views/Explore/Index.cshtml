@@ -1,0 +1,487 @@
+@model GitHubExplorer.Models.ViewModels.ExploreViewModel
+@{
+    ViewData["Title"]      = "Explore Repositories";
+    ViewData["ActivePage"] = "Explore";
+
+    // Active filter pills
+    var activeFilters = new List<(string Label, string Param)>();
+    if (!string.IsNullOrWhiteSpace(Model.Filter.Language)) activeFilters.Add(($"Language: {Model.Filter.Language}", "language"));
+    if (!string.IsNullOrWhiteSpace(Model.Filter.Topic))    activeFilters.Add(($"Topic: {Model.Filter.Topic}",       "topic"));
+    if (!string.IsNullOrWhiteSpace(Model.Filter.License))  activeFilters.Add(($"License: {Model.Filter.License}",  "license"));
+    if (Model.Filter.MinStars.HasValue)                    activeFilters.Add(($"Stars: {Model.Filter.MinStars}+",  "minStars"));
+}
+
+@section Styles {
+<style>
+/* ── Page header ── */
+.explore-header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 0;
+}
+.explore-header-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+}
+.explore-title {
+    font-size: 18px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.3px; display: flex; align-items: center; gap: 8px;
+}
+.explore-title-count {
+    font-size: 12px; font-weight: 500; color: var(--text3);
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 20px; padding: 2px 10px;
+}
+
+/* ── Filter bar ── */
+.filter-bar {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 0;
+    position: sticky; top: 60px; z-index: 50;
+    backdrop-filter: blur(12px);
+}
+.filter-bar-inner {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.filter-left  { display: flex; align-items: center; gap: 6px; flex: 1; flex-wrap: wrap; }
+.filter-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+/* ── Filter dropdown ── */
+.filter-select {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text2); padding: 6px 10px;
+    font-size: 12px; font-family: var(--font); cursor: pointer;
+    outline: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238b949e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 26px;
+    transition: border-color 0.15s, color 0.15s;
+    min-width: 120px;
+}
+.filter-select:focus,
+.filter-select.active { border-color: var(--accent); color: var(--text); }
+.filter-select option { background: var(--bg3); }
+
+/* Stars range input */
+.stars-input {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text2); padding: 6px 10px;
+    font-size: 12px; font-family: var(--font); outline: none;
+    width: 110px; transition: border-color 0.15s;
+}
+.stars-input:focus { border-color: var(--accent); color: var(--text); }
+.stars-input::placeholder { color: var(--text3); }
+
+/* Sort + order */
+.sort-wrap { display: flex; align-items: center; gap: 0; }
+.sort-select {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 6px 0 0 6px; color: var(--text2); padding: 6px 26px 6px 10px;
+    font-size: 12px; font-family: var(--font); cursor: pointer;
+    outline: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238b949e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    transition: border-color 0.15s;
+}
+.sort-select:focus { border-color: var(--accent); outline: none; }
+.order-btn {
+    background: var(--bg3); border: 1px solid var(--border); border-left: none;
+    border-radius: 0 6px 6px 0; color: var(--text2); padding: 6px 10px;
+    font-size: 12px; cursor: pointer; font-family: var(--font);
+    transition: all 0.15s; white-space: nowrap;
+}
+.order-btn:hover { color: var(--text); }
+
+/* ── Active filter pills ── */
+.active-filters {
+    display: flex; align-items: center; gap: 6px;
+    flex-wrap: wrap; margin-top: 10px;
+}
+.filter-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--accent-dim); border: 1px solid rgba(88,166,255,0.35);
+    border-radius: 20px; padding: 3px 10px; font-size: 11px; color: var(--accent);
+}
+.filter-pill-remove {
+    background: none; border: none; color: var(--accent); cursor: pointer;
+    font-size: 13px; line-height: 1; padding: 0; opacity: 0.7;
+    font-family: var(--font); transition: opacity 0.15s;
+}
+.filter-pill-remove:hover { opacity: 1; }
+.clear-all {
+    background: none; border: none; color: var(--text3); font-size: 11px;
+    cursor: pointer; font-family: var(--font); padding: 3px 8px;
+    border-radius: 20px; transition: color 0.15s;
+}
+.clear-all:hover { color: var(--danger); }
+
+/* ── Main layout ── */
+.explore-layout {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 24px;
+    padding: 24px 0 48px;
+    align-items: start;
+}
+
+/* ── Results meta ── */
+.results-meta {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--text2); margin-bottom: 14px; flex-wrap: wrap;
+}
+.results-meta strong { color: var(--text); }
+.results-meta em { color: var(--accent); font-style: normal; }
+
+/* ── Repo list ── */
+.repo-list { display: flex; flex-direction: column; gap: 10px; }
+
+/* ── Loading skeleton ── */
+.skeleton-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px;
+    display: flex; flex-direction: column; gap: 10px;
+}
+@@keyframes shimmer {
+    0%   { background-position: -600px 0; }
+    100% { background-position: 600px 0; }
+}
+.skel {
+    background: linear-gradient(90deg,
+        var(--bg3) 0%, rgba(88,166,255,0.06) 50%, var(--bg3) 100%);
+    background-size: 600px 100%;
+    animation: shimmer 1.4s infinite linear;
+    border-radius: 4px;
+}
+.skel-title { height: 14px; width: 220px; }
+.skel-desc1 { height: 11px; width: 100%; }
+.skel-desc2 { height: 11px; width: 75%; }
+.skel-tags  { height: 20px; width: 160px; border-radius: 20px; }
+.skel-foot  { height: 11px; width: 280px; }
+
+/* ── Pagination ── */
+.pagination {
+    display: flex; align-items: center; justify-content: center;
+    gap: 4px; margin-top: 28px; flex-wrap: wrap;
+}
+.page-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 34px; height: 34px; padding: 0 10px;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 6px; font-size: 13px; color: var(--text2);
+    text-decoration: none; transition: all 0.15s;
+}
+.page-btn:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+.page-btn--active {
+    background: var(--accent); border-color: var(--accent);
+    color: #0d1117; font-weight: 600; pointer-events: none;
+}
+.page-btn--disabled { opacity: 0.35; pointer-events: none; }
+.page-ellipsis { color: var(--text3); padding: 0 4px; line-height: 34px; font-size: 13px; }
+
+/* ── Empty state ── */
+.explore-empty {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 6px; padding: 60px 20px; text-align: center; color: var(--text3);
+}
+.explore-empty p    { font-size: 14px; font-weight: 500; color: var(--text2); margin-top: 12px; }
+.explore-empty span { font-size: 12px; }
+
+/* ── Sidebar ── */
+.explore-sidebar { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 120px; }
+.sidebar-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+.sidebar-title { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+.sidebar-link-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 0; border-bottom: 1px solid var(--border);
+    text-decoration: none; transition: padding-left 0.12s;
+    font-size: 12px;
+}
+.sidebar-link-row:last-child { border-bottom: none; }
+.sidebar-link-row:hover { padding-left: 4px; text-decoration: none; }
+.sidebar-link-row span:first-child { color: var(--accent); font-weight: 500; }
+.sidebar-link-row span:last-child  { color: var(--text3); font-size: 11px; }
+.preset-btn {
+    display: block; width: 100%; text-align: left;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 12px; margin-bottom: 6px;
+    font-size: 12px; color: var(--text2); cursor: pointer;
+    font-family: var(--font); transition: all 0.15s;
+}
+.preset-btn:last-child { margin-bottom: 0; }
+.preset-btn:hover { border-color: var(--accent); color: var(--text); background: var(--accent-dim); }
+.preset-label { font-weight: 600; color: var(--text); display: block; margin-bottom: 2px; }
+
+@@media (max-width: 960px) {
+    .explore-layout { grid-template-columns: 1fr; }
+    .explore-sidebar { display: none; }
+}
+@@media (max-width: 600px) {
+    .filter-left { gap: 4px; }
+    .filter-select, .stars-input { font-size: 11px; }}
+
+</style>
+}
+
+<!-- ── Page header ── -->
+<div class="explore-header">
+    <div class="container">
+        <div class="explore-header-inner">
+            <h1 class="explore-title">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--accent)">
+                    <path d="M11.742 10.344a6.5 6.5 0 10-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 001.415-1.414l-3.85-3.85a1.007 1.007 0 00-.115-.1zM12 6.5a5.5 5.5 0 11-11 0 5.5 5.5 0 0111 0z"/>
+                </svg>
+                Explore Repositories
+                @if (Model.TotalCount > 0)
+                {
+                    <span class="explore-title-count">@Model.TotalCount.ToString("N0") results</span>
+                }
+            </h1>
+        </div>
+    </div>
+</div>
+
+<!-- ── Filter bar ── -->
+<div class="filter-bar" id="filter-bar">
+    <div class="container">
+        <form id="filter-form" method="get" asp-controller="Explore" asp-action="Index">
+
+            <div class="filter-bar-inner">
+                <!-- Left: filters -->
+                <div class="filter-left">
+
+                    <!-- Language -->
+                    <select class="filter-select @(!string.IsNullOrWhiteSpace(Model.Filter.Language) ? "active" : "")"
+                            name="language"
+                            onchange="document.getElementById('filter-form').submit()">
+                        <option value="">All Languages</option>
+                        @foreach (var lang in new[] {
+                            "C#","JavaScript","TypeScript","Python","Go",
+                            "Rust","Java","Kotlin","Swift","Ruby","PHP","C","C++","Shell","Dart"
+                        })
+                        {
+                            <option value="@lang" selected="@(Model.Filter.Language == lang)">@lang</option>
+                        }
+                    </select>
+
+                    <!-- Stars -->
+                    <input class="stars-input"
+                           type="number" name="minStars" min="0"
+                           value="@Model.Filter.MinStars"
+                           placeholder="Min stars"
+                           onchange="document.getElementById('filter-form').submit()" />
+
+                    <!-- Topic -->
+                    <input class="stars-input" style="width:130px"
+                           type="text" name="topic"
+                           value="@Model.Filter.Topic"
+                           placeholder="Topic…"
+                           onchange="document.getElementById('filter-form').submit()" />
+
+                    <!-- License -->
+                    <select class="filter-select @(!string.IsNullOrWhiteSpace(Model.Filter.License) ? "active" : "")"
+                            name="license"
+                            onchange="document.getElementById('filter-form').submit()">
+                        <option value="">Any License</option>
+                        @foreach (var lic in new[] { "MIT","Apache-2.0","GPL-2.0","GPL-3.0","BSD-2-Clause","BSD-3-Clause","LGPL-2.1","MPL-2.0","AGPL-3.0","Unlicense" })
+                        {
+                            <option value="@lic" selected="@(Model.Filter.License == lic)">@lic</option>
+                        }
+                    </select>
+
+                </div>
+
+                <!-- Right: sort -->
+                <div class="filter-right">
+                    <div class="sort-wrap">
+                        <select class="sort-select" name="sort"
+                                onchange="document.getElementById('filter-form').submit()">
+                            <option value="stars"   selected="@(Model.Filter.Sort == "stars")">Sort: Stars</option>
+                            <option value="forks"   selected="@(Model.Filter.Sort == "forks")">Sort: Forks</option>
+                            <option value="updated" selected="@(Model.Filter.Sort == "updated")">Sort: Updated</option>
+                        </select>
+                        <button type="button" class="order-btn"
+                                onclick="toggleOrder()"
+                                title="Toggle sort direction"
+                                id="order-btn">
+                            @(Model.Filter.Order == "asc" ? "↑ Asc" : "↓ Desc")
+                        </button>
+                        <input type="hidden" name="order" id="order-input" value="@Model.Filter.Order" />
+                    </div>
+                </div>
+
+                <!-- Keep query in hidden field -->
+                <input type="hidden" name="query" value="@Model.Filter.Query" />
+            </div>
+
+            <!-- Active filter pills -->
+            @if (activeFilters.Count > 0)
+            {
+                <div class="active-filters">
+                    @foreach (var (label, param) in activeFilters)
+                    {
+                        <span class="filter-pill">
+                            @label
+                            <button type="button" class="filter-pill-remove"
+                                    onclick="removeFilter('@param')" title="Remove filter">×</button>
+                        </span>
+                    }
+                    <button type="button" class="clear-all" onclick="clearAllFilters()">Clear all</button>
+                </div>
+            }
+
+        </form>
+    </div>
+</div>
+
+<!-- ── Main content ── -->
+<div class="container">
+    <div class="explore-layout">
+
+        <!-- Results -->
+        <main id="results-area">
+            @await Html.PartialAsync("_RepoList", Model)
+        </main>
+
+        <!-- Sidebar -->
+        <aside class="explore-sidebar">
+
+            <!-- Quick presets -->
+            <div class="sidebar-card">
+                <div class="sidebar-title">Quick Presets</div>
+                <button class="preset-btn" onclick="applyPreset({topic:'good-first-issue'})">
+                    <span class="preset-label">🌱 Beginner Friendly</span>
+                    good-first-issue repos
+                </button>
+                <button class="preset-btn" onclick="applyPreset({minStars:10000,sort:'stars'})">
+                    <span class="preset-label">⭐ Highly Starred</span>
+                    10 000+ stars
+                </button>
+                <button class="preset-btn" onclick="applyPreset({sort:'updated',order:'desc'})">
+                    <span class="preset-label">⚡ Recently Active</span>
+                    latest commits today
+                </button>
+                <button class="preset-btn" onclick="applyPreset({language:'C#',sort:'stars'})">
+                    <span class="preset-label">💻 C# Ecosystem</span>
+                    top .NET projects
+                </button>
+                <button class="preset-btn" onclick="applyPreset({topic:'hacktoberfest'})">
+                    <span class="preset-label">🎃 Hacktoberfest</span>
+                    open contribution repos
+                </button>
+            </div>
+
+            <!-- Popular topics -->
+            <div class="sidebar-card">
+                <div class="sidebar-title">Popular Topics</div>
+                @foreach (var t in new[] {
+                    ("#machine-learning","48.2k"),("#react","32.1k"),("#python","28.7k"),
+                    ("#docker","21.3k"),("#api","19.8k"),("#cli","14.5k"),("#security","12.3k")
+                })
+                {
+                    <a class="sidebar-link-row"
+                       asp-controller="Explore" asp-action="Index"
+                       asp-route-topic="@t.Item1.TrimStart('#')">
+                        <span>@t.Item1</span>
+                        <span>@t.Item2 repos</span>
+                    </a>
+                }
+            </div>
+
+            <!-- Popular languages -->
+            <div class="sidebar-card">
+                <div class="sidebar-title">Languages</div>
+                @foreach (var lang in new[] {
+                    ("JavaScript","#f1e05a"),("Python","#3572A5"),("TypeScript","#3178c6"),
+                    ("Go","#00ADD8"),("Rust","#dea584"),("C#","#178600"),("Java","#b07219")
+                })
+                {
+                    <a class="sidebar-link-row"
+                       asp-controller="Explore" asp-action="Index"
+                       asp-route-language="@lang.Item1">
+                        <span style="display:flex;align-items:center;gap:6px">
+                            <span class="lang-dot" style="background:@lang.Item2"></span>
+                            @lang.Item1
+                        </span>
+                        <span>→</span>
+                    </a>
+                }
+            </div>
+
+        </aside>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // ── Toggle sort order ──────────────────────────────────
+    function toggleOrder() {
+        const input = document.getElementById('order-input');
+        const btn   = document.getElementById('order-btn');
+        if (input.value === 'desc') {
+            input.value  = 'asc';
+            btn.textContent = '↑ Asc';
+        } else {
+            input.value  = 'desc';
+            btn.textContent = '↓ Desc';
+        }
+        document.getElementById('filter-form').submit();
+    }
+
+    // ── Remove single filter pill ──────────────────────────
+    function removeFilter(param) {
+        const form = document.getElementById('filter-form');
+        const el   = form.querySelector(`[name="${param}"]`);
+        if (el) {
+            if (el.tagName === 'SELECT') el.value = '';
+            else el.value = '';
+        }
+        form.submit();
+    }
+
+    // ── Clear all filters (keep query) ────────────────────
+    function clearAllFilters() {
+        const form = document.getElementById('filter-form');
+        form.querySelectorAll('select').forEach(s => s.value = '');
+        ['minStars','topic','license'].forEach(n => {
+            const el = form.querySelector(`[name="${n}"]`);
+            if (el) el.value = '';
+        });
+        form.submit();
+    }
+
+    // ── Apply preset ──────────────────────────────────────
+    function applyPreset(params) {
+        // Build URL from current query + preset params
+        const url = new URL(window.location.origin + '/explore');
+        const q   = document.querySelector('[name="query"]')?.value;
+        if (q) url.searchParams.set('query', q);
+        for (const [k, v] of Object.entries(params)) {
+            url.searchParams.set(k, v);
+        }
+        window.location = url.toString();
+    }
+
+    // ── AJAX filter (debounced text inputs) ───────────────
+    let debounceTimer;
+    document.querySelectorAll('.stars-input').forEach(input => {
+        input.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                document.getElementById('filter-form').submit();
+            }, 600);
+        });
+    });
+
+    // ── Keyboard: focus search on / ───────────────────────
+    // (already handled globally in _Layout, but topic input needs Enter)
+    document.querySelector('[name="topic"]')?.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('filter-form').submit();
+        }
+    });
+</script>
+}
