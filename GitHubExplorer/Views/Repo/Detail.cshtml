@@ -311,7 +311,7 @@
 
                 @if (!string.IsNullOrWhiteSpace(Model.ReadmeHtml))
                 {
-                    <div class="readme-body">@Model.ReadmeHtml</div>
+                    <div class="readme-body">@Html.Raw(Model.ReadmeHtml)</div>
                 }
                 else
                 {
