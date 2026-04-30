@@ -1,0 +1,661 @@
+@model GitHubExplorer.Models.ViewModels.CompareViewModel?
+@{
+    ViewData["Title"]      = "Compare Repositories";
+    ViewData["ActivePage"] = "Compare";
+
+    bool hasData  = Model?.Repo1 != null && Model?.Repo2 != null;
+    bool hasInput = Model != null;
+
+    // Helper: winner highlight
+    Func<int, int, string> winClass = (a, b) =>
+        a > b ? "win" : a < b ? "lose" : "tie";
+}
+
+@section Styles {
+<style>
+/* ── Page header ── */
+.compare-header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 0 24px;
+}
+.compare-title {
+    font-size: 20px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.4px; display: flex; align-items: center; gap: 10px;
+    margin-bottom: 6px;
+}
+.compare-subtitle { font-size: 13px; color: var(--text2); }
+
+/* ── Input form ── */
+.compare-form-wrap {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 0;
+}
+.compare-form {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.compare-input-group {
+    flex: 1; min-width: 200px;
+    display: flex; flex-direction: column; gap: 4px;
+}
+.compare-label {
+    font-size: 11px; color: var(--text3); font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.05em;
+}
+.compare-input {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); padding: 9px 12px;
+    font-size: 13px; font-family: var(--font); outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s; width: 100%;
+}
+.compare-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(88,166,255,0.12);
+}
+.compare-input::placeholder { color: var(--text3); }
+.compare-vs {
+    font-size: 16px; font-weight: 700; color: var(--text3);
+    padding: 0 4px; flex-shrink: 0; align-self: flex-end;
+    padding-bottom: 10px;
+}
+.compare-submit {
+    align-self: flex-end; padding-bottom: 0;
+}
+
+/* ── Error / not found banner ── */
+.compare-error {
+    background: rgba(248,81,73,0.08); border: 1px solid rgba(248,81,73,0.3);
+    border-radius: 8px; padding: 12px 16px; margin: 20px 0;
+    display: flex; gap: 10px; align-items: center;
+    font-size: 12px; color: var(--text2);
+}
+
+/* ── Main layout ── */
+.compare-layout { padding: 28px 0 56px; }
+
+/* ── Repo header cards (top) ── */
+.compare-repos-header {
+    display: grid; grid-template-columns: 1fr 80px 1fr;
+    gap: 0; margin-bottom: 24px; align-items: stretch;
+}
+.repo-header-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px;
+    display: flex; flex-direction: column; gap: 10px;
+}
+.repo-header-card.left  { border-radius: 8px 0 0 8px; border-right: none; }
+.repo-header-card.right { border-radius: 0 8px 8px 0; border-left: none; }
+
+.vs-divider {
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg3); border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    font-size: 14px; font-weight: 700; color: var(--text3);
+    letter-spacing: 1px;
+}
+
+.rh-top { display: flex; align-items: center; gap: 10px; }
+.rh-avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); flex-shrink: 0; object-fit: cover; }
+.rh-name { font-size: 15px; font-weight: 700; color: var(--accent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rh-name:hover { text-decoration: underline; }
+.rh-name strong { font-weight: 800; }
+.rh-desc { font-size: 12px; color: var(--text2); line-height: 1.5; }
+.rh-meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 11px; color: var(--text2); }
+.rh-meta span { display: flex; align-items: center; gap: 3px; }
+
+/* ── Stat rows ── */
+.compare-section {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden; margin-bottom: 16px;
+}
+.compare-section-title {
+    font-size: 11px; font-weight: 600; color: var(--text3);
+    text-transform: uppercase; letter-spacing: 0.07em;
+    padding: 10px 16px; background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+}
+.stat-row {
+    display: grid; grid-template-columns: 1fr 180px 1fr;
+    align-items: center; border-bottom: 1px solid var(--border);
+    min-height: 48px;
+}
+.stat-row:last-child { border-bottom: none; }
+
+.stat-val {
+    padding: 12px 16px; font-size: 15px; font-weight: 700;
+    display: flex; align-items: center; gap: 6px;
+}
+.stat-val.left  { justify-content: flex-start; }
+.stat-val.right { justify-content: flex-end; }
+
+.stat-val.win  { color: var(--success); }
+.stat-val.lose { color: var(--text3); }
+.stat-val.tie  { color: var(--text2); }
+
+.stat-label {
+    text-align: center; font-size: 11px; color: var(--text3);
+    font-weight: 500; padding: 0 8px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+}
+
+/* ── Bar comparison ── */
+.bar-row {
+    display: grid; grid-template-columns: 1fr 180px 1fr;
+    align-items: center; padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+.bar-row:last-child { border-bottom: none; }
+.bar-side {
+    padding: 0 16px; display: flex; flex-direction: column; gap: 4px;
+}
+.bar-side.right { align-items: flex-end; }
+.bar-track { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+.bar-val { font-size: 13px; font-weight: 600; color: var(--text); }
+.bar-pct { font-size: 10px; color: var(--text3); }
+
+/* ── Topics comparison ── */
+.topics-row {
+    display: grid; grid-template-columns: 1fr 180px 1fr;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+    align-items: start;
+}
+.topics-row:last-child { border-bottom: none; }
+.topics-side { padding: 0 16px; display: flex; flex-wrap: wrap; gap: 4px; }
+.topics-side.right { justify-content: flex-end; }
+
+/* ── Winner banner ── */
+.winner-banner {
+    background: linear-gradient(135deg, rgba(63,185,80,0.1), rgba(63,185,80,0.05));
+    border: 1px solid rgba(63,185,80,0.3);
+    border-radius: 8px; padding: 16px 20px;
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 24px; flex-wrap: wrap;
+}
+.winner-trophy { font-size: 28px; flex-shrink: 0; }
+.winner-text   { flex: 1; }
+.winner-title  { font-size: 14px; font-weight: 700; color: var(--success); margin-bottom: 3px; }
+.winner-sub    { font-size: 12px; color: var(--text2); }
+
+/* ── Empty / form state ── */
+.compare-empty {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px; padding: 64px 20px; text-align: center; color: var(--text3);
+}
+.compare-empty h2 { font-size: 16px; font-weight: 600; color: var(--text2); margin-top: 16px; }
+.compare-empty p  { font-size: 13px; max-width: 360px; line-height: 1.6; }
+.compare-examples { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+.compare-example-btn {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 14px; font-size: 12px;
+    color: var(--text2); cursor: pointer; font-family: var(--font);
+    transition: all 0.15s;
+}
+.compare-example-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+@@media (max-width: 768px) {
+    .compare-repos-header { grid-template-columns: 1fr; }
+    .repo-header-card.left  { border-radius: 8px 8px 0 0; border-right: 1px solid var(--border); border-bottom: none; }
+    .repo-header-card.right { border-radius: 0 0 8px 8px; border-left: 1px solid var(--border); border-top: none; }
+    .vs-divider { padding: 10px 0; border: 1px solid var(--border); border-top: none; border-bottom: none; }
+    .stat-row, .bar-row, .topics-row { grid-template-columns: 1fr 120px 1fr; }
+    .stat-val { font-size: 13px; padding: 10px 10px; }
+    .compare-form { gap: 6px; }
+}
+@@media (max-width: 480px) {
+    .stat-row, .bar-row, .topics-row { grid-template-columns: 1fr 80px 1fr; }
+    .stat-label { font-size: 9px; }
+}
+</style>
+}
+
+<!-- ── Header ── -->
+<div class="compare-header">
+    <div class="container">
+        <h1 class="compare-title">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="var(--accent)">
+                <path d="M1 5h2v6H1zm12 0h2v6h-2zM6 1h4v14H6z" opacity="0.3"/>
+                <path d="M1 4.5A.5.5 0 011.5 4H4a.5.5 0 010 1H2v6h2a.5.5 0 010 1H1.5a.5.5 0 01-.5-.5v-7zm13 7a.5.5 0 01-.5.5H12a.5.5 0 010-1h2V5h-2a.5.5 0 010-1h2.5a.5.5 0 01.5.5v7zM5.5 0a.5.5 0 01.5.5v15a.5.5 0 01-1 0V.5a.5.5 0 01.5-.5zm5 0a.5.5 0 01.5.5v15a.5.5 0 01-1 0V.5a.5.5 0 01.5-.5z"/>
+            </svg>
+            Compare Repositories
+        </h1>
+        <p class="compare-subtitle">Side-by-side stats for any two GitHub repositories</p>
+    </div>
+</div>
+
+<!-- ── Input form ── -->
+<div class="compare-form-wrap">
+    <div class="container">
+        <form method="get" asp-controller="Compare" asp-action="Index" class="compare-form">
+            <div class="compare-input-group">
+                <label class="compare-label">First repository</label>
+                <input class="compare-input" type="text" name="repo1"
+                       value="@Model?.Repo1Input"
+                       placeholder="e.g. facebook/react"
+                       id="repo1-input" />
+            </div>
+
+            <span class="compare-vs">VS</span>
+
+            <div class="compare-input-group">
+                <label class="compare-label">Second repository</label>
+                <input class="compare-input" type="text" name="repo2"
+                       value="@Model?.Repo2Input"
+                       placeholder="e.g. vuejs/vue"
+                       id="repo2-input" />
+            </div>
+
+            <div class="compare-submit">
+                <button type="submit" class="btn btn-primary">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M1 5h2v6H1zm12 0h2v6h-2zM6 1h4v14H6z" opacity="0.5"/>
+                        <path d="M5.5 0a.5.5 0 01.5.5v15a.5.5 0 01-1 0V.5a.5.5 0 01.5-.5zm5 0a.5.5 0 01.5.5v15a.5.5 0 01-1 0V.5a.5.5 0 01.5-.5z"/>
+                    </svg>
+                    Compare
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="container">
+    <div class="compare-layout">
+
+        @if (!hasInput || (Model?.Repo1Input == null && Model?.Repo2Input == null))
+        {
+            <!-- ── Empty state ── -->
+            <div class="compare-empty">
+                <svg width="48" height="48" viewBox="0 0 16 16" fill="currentColor" opacity="0.15">
+                    <path d="M1 5h2v6H1zm12 0h2v6h-2zM6 1h4v14H6z"/>
+                </svg>
+                <h2>Compare any two repositories</h2>
+                <p>Enter two repositories in the format <code style="background:var(--bg3);padding:1px 6px;border-radius:4px;font-family:var(--mono);font-size:12px">owner/repo</code> to see a detailed side-by-side comparison.</p>
+                <div class="compare-examples">
+                    <button class="compare-example-btn" onclick="fillExample('facebook/react','vuejs/vue')">
+                        react vs vue
+                    </button>
+                    <button class="compare-example-btn" onclick="fillExample('microsoft/vscode','neovim/neovim')">
+                        vscode vs neovim
+                    </button>
+                    <button class="compare-example-btn" onclick="fillExample('golang/go','rust-lang/rust')">
+                        Go vs Rust
+                    </button>
+                    <button class="compare-example-btn" onclick="fillExample('docker/compose','kubernetes/kubernetes')">
+                        compose vs k8s
+                    </button>
+                </div>
+            </div>
+        }
+        else if (Model?.Repo1 == null || Model?.Repo2 == null)
+        {
+            <!-- ── Error state ── -->
+            <div class="compare-error">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="var(--danger)">
+                    <path d="M8 1a7 7 0 100 14A7 7 0 008 1zM0 8a8 8 0 1116 0A8 8 0 010 8zm7-3a1 1 0 012 0v3.5a.5.5 0 01-1 0V5zm1 6a1 1 0 110-2 1 1 0 010 2z"/>
+                </svg>
+                @if (Model?.Repo1 == null && Model?.Repo2 == null)
+                {
+                    <span>Could not find either repository. Check the names and try again.</span>
+                }
+                else if (Model?.Repo1 == null)
+                {
+                    <span>Repository <strong>@Model?.Repo1Input</strong> was not found.</span>
+                }
+                else
+                {
+                    <span>Repository <strong>@Model?.Repo2Input</strong> was not found.</span>
+                }
+            </div>
+        }
+        else
+        {
+            var r1 = Model!.Repo1!;
+            var r2 = Model!.Repo2!;
+
+            <!-- ── Winner banner ── -->
+            @{
+                int score1 = 0, score2 = 0;
+                if (r1.Stars    > r2.Stars)    score1++; else if (r2.Stars    > r1.Stars)    score2++;
+                if (r1.Forks    > r2.Forks)    score1++; else if (r2.Forks    > r1.Forks)    score2++;
+                if (r1.Watchers > r2.Watchers) score1++; else if (r2.Watchers > r1.Watchers) score2++;
+                if (r1.OpenIssues < r2.OpenIssues) score1++; else if (r2.OpenIssues < r1.OpenIssues) score2++;
+                var (winnerName, winnerScore, loserScore) = score1 > score2
+                    ? (r1.FullName, score1, score2)
+                    : score2 > score1
+                        ? (r2.FullName, score2, score1)
+                        : (null, score1, score2);
+            }
+
+            @if (winnerName != null)
+            {
+                <div class="winner-banner">
+                    <span class="winner-trophy">🏆</span>
+                    <div class="winner-text">
+                        <div class="winner-title">@winnerName leads overall</div>
+                        <div class="winner-sub">Wins @winnerScore out of 4 metrics compared to @loserScore</div>
+                    </div>
+                    <a class="btn btn-outline" style="font-size:12px"
+                       asp-controller="Repo" asp-action="Detail"
+                       asp-route-owner="@(winnerName.Split('/')[0])"
+                       asp-route-name="@(winnerName.Split('/')[1])">
+                        View repo →
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="winner-banner" style="background:rgba(88,166,255,0.06);border-color:rgba(88,166,255,0.2)">
+                    <span class="winner-trophy">🤝</span>
+                    <div class="winner-text">
+                        <div class="winner-title" style="color:var(--accent)">It's a tie!</div>
+                        <div class="winner-sub">Both repositories are evenly matched across all metrics</div>
+                    </div>
+                </div>
+            }
+
+            <!-- ── Repo header cards ── -->
+            <div class="compare-repos-header">
+                <!-- Repo 1 -->
+                <div class="repo-header-card left">
+                    <div class="rh-top">
+                        @if (!string.IsNullOrWhiteSpace(r1.OwnerAvatarUrl))
+                        {
+                            <img class="rh-avatar" src="@r1.OwnerAvatarUrl" alt="@r1.Owner"
+                                 onerror="this.style.display='none'" />
+                        }
+                        <div style="min-width:0">
+                            <a class="rh-name"
+                               asp-controller="Repo" asp-action="Detail"
+                               asp-route-owner="@r1.Owner" asp-route-name="@r1.Name">
+                                @r1.Owner/<strong>@r1.Name</strong>
+                            </a>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(r1.Description))
+                    {
+                        <p class="rh-desc">@r1.Description</p>
+                    }
+                    <div class="rh-meta">
+                        @if (!string.IsNullOrWhiteSpace(r1.Language))
+                        {
+                            <span>
+                                <span class="lang-dot" style="background:@(r1.LanguageColor ?? "#8b949e")"></span>
+                                @r1.Language
+                            </span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(r1.License))
+                        {
+                            <span>📄 @r1.License</span>
+                        }
+                        <span>🕒 @r1.UpdatedAgo</span>
+                    </div>
+                    @if (r1.Topics.Count > 0)
+                    {
+                        <div class="repo-tags">
+                            @foreach (var t in r1.Topics.Take(4))
+                            {
+                                <span class="tag">@t</span>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <!-- VS divider -->
+                <div class="vs-divider">VS</div>
+
+                <!-- Repo 2 -->
+                <div class="repo-header-card right">
+                    <div class="rh-top">
+                        @if (!string.IsNullOrWhiteSpace(r2.OwnerAvatarUrl))
+                        {
+                            <img class="rh-avatar" src="@r2.OwnerAvatarUrl" alt="@r2.Owner"
+                                 onerror="this.style.display='none'" />
+                        }
+                        <div style="min-width:0">
+                            <a class="rh-name"
+                               asp-controller="Repo" asp-action="Detail"
+                               asp-route-owner="@r2.Owner" asp-route-name="@r2.Name">
+                                @r2.Owner/<strong>@r2.Name</strong>
+                            </a>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(r2.Description))
+                    {
+                        <p class="rh-desc">@r2.Description</p>
+                    }
+                    <div class="rh-meta">
+                        @if (!string.IsNullOrWhiteSpace(r2.Language))
+                        {
+                            <span>
+                                <span class="lang-dot" style="background:@(r2.LanguageColor ?? "#8b949e")"></span>
+                                @r2.Language
+                            </span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(r2.License))
+                        {
+                            <span>📄 @r2.License</span>
+                        }
+                        <span>🕒 @r2.UpdatedAgo</span>
+                    </div>
+                    @if (r2.Topics.Count > 0)
+                    {
+                        <div class="repo-tags">
+                            @foreach (var t in r2.Topics.Take(4))
+                            {
+                                <span class="tag">@t</span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- ── Stats: Popularity ── -->
+            <div class="compare-section">
+                <div class="compare-section-title">⭐ Popularity</div>
+
+                <div class="stat-row">
+                    <div class="stat-val left @winClass(r1.Stars, r2.Stars)">
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>
+                        @r1.StarsFormatted
+                        @if (winClass(r1.Stars, r2.Stars) == "win") { <span style="font-size:10px">▲</span> }
+                    </div>
+                    <div class="stat-label">Stars</div>
+                    <div class="stat-val right @winClass(r2.Stars, r1.Stars)">
+                        @if (winClass(r2.Stars, r1.Stars) == "win") { <span style="font-size:10px">▲</span> }
+                        @r2.StarsFormatted
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>
+                    </div>
+                </div>
+
+                <div class="stat-row">
+                    <div class="stat-val left @winClass(r1.Watchers, r2.Watchers)">
+                        👁 @r1.Watchers.ToString("N0")
+                        @if (winClass(r1.Watchers, r2.Watchers) == "win") { <span style="font-size:10px">▲</span> }
+                    </div>
+                    <div class="stat-label">Watchers</div>
+                    <div class="stat-val right @winClass(r2.Watchers, r1.Watchers)">
+                        @if (winClass(r2.Watchers, r1.Watchers) == "win") { <span style="font-size:10px">▲</span> }
+                        @r2.Watchers.ToString("N0") 👁
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Stats: Community ── -->
+            <div class="compare-section">
+                <div class="compare-section-title">🍴 Community</div>
+
+                <div class="stat-row">
+                    <div class="stat-val left @winClass(r1.Forks, r2.Forks)">
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M5 3.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm0 2.122a2.25 2.25 0 10-1.5 0v.878A2.25 2.25 0 005.75 8.5h1.5v2.128a2.251 2.251 0 101.5 0V8.5h1.5a2.25 2.25 0 002.25-2.25v-.878a2.25 2.25 0 10-1.5 0v.878a.75.75 0 01-.75.75h-4.5A.75.75 0 015 6.25v-.878zm3.75 7.378a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm3-8.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/></svg>
+                        @(r1.Forks >= 1000 ? $"{r1.Forks/1000.0:F1}k" : r1.Forks.ToString())
+                        @if (winClass(r1.Forks, r2.Forks) == "win") { <span style="font-size:10px">▲</span> }
+                    </div>
+                    <div class="stat-label">Forks</div>
+                    <div class="stat-val right @winClass(r2.Forks, r1.Forks)">
+                        @if (winClass(r2.Forks, r1.Forks) == "win") { <span style="font-size:10px">▲</span> }
+                        @(r2.Forks >= 1000 ? $"{r2.Forks/1000.0:F1}k" : r2.Forks.ToString())
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M5 3.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm0 2.122a2.25 2.25 0 10-1.5 0v.878A2.25 2.25 0 005.75 8.5h1.5v2.128a2.251 2.251 0 101.5 0V8.5h1.5a2.25 2.25 0 002.25-2.25v-.878a2.25 2.25 0 10-1.5 0v.878a.75.75 0 01-.75.75h-4.5A.75.75 0 015 6.25v-.878zm3.75 7.378a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm3-8.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/></svg>
+                    </div>
+                </div>
+
+                <!-- fewer open issues = better -->
+                <div class="stat-row">
+                    <div class="stat-val left @winClass(r2.OpenIssues, r1.OpenIssues)">
+                        🔴 @r1.OpenIssues.ToString("N0")
+                        @if (winClass(r2.OpenIssues, r1.OpenIssues) == "win") { <span style="font-size:10px;color:var(--success)">fewer ▲</span> }
+                    </div>
+                    <div class="stat-label">Open Issues</div>
+                    <div class="stat-val right @winClass(r1.OpenIssues, r2.OpenIssues)">
+                        @if (winClass(r1.OpenIssues, r2.OpenIssues) == "win") { <span style="font-size:10px;color:var(--success)">fewer ▲</span> }
+                        @r2.OpenIssues.ToString("N0") 🔴
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Bar chart: Stars visual ── -->
+            @{
+                int maxStars  = Math.Max(r1.Stars,  r2.Stars);
+                int maxForks  = Math.Max(r1.Forks,  r2.Forks);
+                double s1pct  = maxStars > 0 ? Math.Round(r1.Stars  / (double)maxStars  * 100, 1) : 0;
+                double s2pct  = maxStars > 0 ? Math.Round(r2.Stars  / (double)maxStars  * 100, 1) : 0;
+                double f1pct  = maxForks > 0 ? Math.Round(r1.Forks  / (double)maxForks  * 100, 1) : 0;
+                double f2pct  = maxForks > 0 ? Math.Round(r2.Forks  / (double)maxForks  * 100, 1) : 0;
+            }
+            <div class="compare-section">
+                <div class="compare-section-title">📊 Visual comparison</div>
+
+                <div class="bar-row">
+                    <div class="bar-side left">
+                        <div class="bar-val">⭐ @r1.StarsFormatted</div>
+                        <div class="bar-track" style="width:100%">
+                            <div class="bar-fill" style="width:@s1pct%;background:@(s1pct >= s2pct ? "var(--success)" : "var(--text3)")"></div>
+                        </div>
+                        <div class="bar-pct">@s1pct%</div>
+                    </div>
+                    <div class="stat-label">Stars</div>
+                    <div class="bar-side right">
+                        <div class="bar-val">@r2.StarsFormatted ⭐</div>
+                        <div class="bar-track" style="width:100%">
+                            <div class="bar-fill" style="width:@s2pct%;background:@(s2pct >= s1pct ? "var(--success)" : "var(--text3)")"></div>
+                        </div>
+                        <div class="bar-pct">@s2pct%</div>
+                    </div>
+                </div>
+
+                <div class="bar-row">
+                    <div class="bar-side left">
+                        <div class="bar-val">🍴 @(r1.Forks >= 1000 ? $"{r1.Forks/1000.0:F1}k" : r1.Forks.ToString())</div>
+                        <div class="bar-track" style="width:100%">
+                            <div class="bar-fill" style="width:@f1pct%;background:@(f1pct >= f2pct ? "var(--accent)" : "var(--text3)")"></div>
+                        </div>
+                        <div class="bar-pct">@f1pct%</div>
+                    </div>
+                    <div class="stat-label">Forks</div>
+                    <div class="bar-side right">
+                        <div class="bar-val">@(r2.Forks >= 1000 ? $"{r2.Forks/1000.0:F1}k" : r2.Forks.ToString()) 🍴</div>
+                        <div class="bar-track" style="width:100%">
+                            <div class="bar-fill" style="width:@f2pct%;background:@(f2pct >= f1pct ? "var(--accent)" : "var(--text3)")"></div>
+                        </div>
+                        <div class="bar-pct">@f2pct%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Topics ── -->
+            @if (r1.Topics.Count > 0 || r2.Topics.Count > 0)
+            {
+                <div class="compare-section">
+                    <div class="compare-section-title">🏷️ Topics</div>
+                    <div class="topics-row">
+                        <div class="topics-side left">
+                            @foreach (var t in r1.Topics)
+                            {
+                                <a class="tag" asp-controller="Explore" asp-action="Index"
+                                   asp-route-topic="@t" style="text-decoration:none">@t</a>
+                            }
+                            @if (r1.Topics.Count == 0)
+                            {
+                                <span style="font-size:12px;color:var(--text3)">No topics</span>
+                            }
+                        </div>
+                        <div class="stat-label">@r1.Topics.Count vs @r2.Topics.Count</div>
+                        <div class="topics-side right">
+                            @foreach (var t in r2.Topics)
+                            {
+                                <a class="tag" asp-controller="Explore" asp-action="Index"
+                                   asp-route-topic="@t" style="text-decoration:none">@t</a>
+                            }
+                            @if (r2.Topics.Count == 0)
+                            {
+                                <span style="font-size:12px;color:var(--text3)">No topics</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- ── Info ── -->
+            <div class="compare-section">
+                <div class="compare-section-title">ℹ️ Info</div>
+
+                <div class="stat-row">
+                    <div class="stat-val left" style="font-size:12px;color:var(--text2)">
+                        @if (!string.IsNullOrWhiteSpace(r1.Language))
+                        {
+                            <span class="lang-dot" style="background:@(r1.LanguageColor ?? "#8b949e")"></span>
+                            @r1.Language
+                        }
+                        else { <span style="color:var(--text3)">—</span> }
+                    </div>
+                    <div class="stat-label">Language</div>
+                    <div class="stat-val right" style="font-size:12px;color:var(--text2)">
+                        @if (!string.IsNullOrWhiteSpace(r2.Language))
+                        {
+                            @r2.Language
+                            <span class="lang-dot" style="background:@(r2.LanguageColor ?? "#8b949e")"></span>
+                        }
+                        else { <span style="color:var(--text3)">—</span> }
+                    </div>
+                </div>
+
+                <div class="stat-row">
+                    <div class="stat-val left" style="font-size:12px;color:var(--text2)">
+                        @(r1.License ?? "—")
+                    </div>
+                    <div class="stat-label">License</div>
+                    <div class="stat-val right" style="font-size:12px;color:var(--text2)">
+                        @(r2.License ?? "—")
+                    </div>
+                </div>
+
+                <div class="stat-row">
+                    <div class="stat-val left" style="font-size:12px;color:var(--text2)">
+                        @r1.CreatedAt.ToString("MMM d, yyyy")
+                    </div>
+                    <div class="stat-label">Created</div>
+                    <div class="stat-val right" style="font-size:12px;color:var(--text2)">
+                        @r2.CreatedAt.ToString("MMM d, yyyy")
+                    </div>
+                </div>
+
+                <div class="stat-row">
+                    <div class="stat-val left" style="font-size:12px;color:var(--text2)">@r1.UpdatedAgo</div>
+                    <div class="stat-label">Last update</div>
+                    <div class="stat-val right" style="font-size:12px;color:var(--text2)">@r2.UpdatedAgo</div>
+                </div>
+            </div>
+        }
+
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function fillExample(r1, r2) {
+        document.getElementById('repo1-input').value = r1;
+        document.getElementById('repo2-input').value = r2;
+        document.querySelector('form').submit();
+    }
+</script>
+}

@@ -1,0 +1,580 @@
+@using GitHubExplorer.Models.Domain
+@model GitHubExplorer.Models.Domain.AppUser
+@{
+    ViewData["Title"]      = "My Collections";
+    ViewData["ActivePage"] = "";
+
+    var favorites    = Model.Favorites.OrderByDescending(f => f.SavedAt).ToList();
+    var collections  = Model.Collections.OrderByDescending(c => c.CreatedAt).ToList();
+    var uncollected  = favorites.Where(f => f.CollectionId == null).ToList();
+}
+
+@section Styles {
+<style>
+/* ── Page layout ── */
+.collections-page { padding: 32px 0 64px; }
+
+/* ── Page header ── */
+.collections-header {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; gap: 16px;
+    margin-bottom: 28px; flex-wrap: wrap;
+}
+.collections-title {
+    font-size: 20px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.4px; display: flex; align-items: center; gap: 10px;
+}
+.collections-sub {
+    font-size: 13px; color: var(--text2); margin-top: 4px;
+}
+.collections-user {
+    display: flex; align-items: center; gap: 10px;
+}
+.collections-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 2px solid var(--border); object-fit: cover;
+}
+.collections-username {
+    font-size: 13px; font-weight: 600; color: var(--text);
+}
+.collections-since {
+    font-size: 11px; color: var(--text3);
+}
+
+/* ── Tabs ── */
+.collections-tabs {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+}
+.col-tab {
+    padding: 10px 18px; font-size: 13px; font-weight: 500;
+    color: var(--text2); text-decoration: none; cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+    background: none; border-top: none; border-left: none; border-right: none;
+    font-family: var(--font); display: flex; align-items: center; gap: 6px;
+}
+.col-tab:hover { color: var(--text); text-decoration: none; }
+.col-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.col-tab-count {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 20px; padding: 0 7px; font-size: 11px;
+    color: var(--text3); font-weight: 500;
+}
+
+/* ── Tab panels ── */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Stats strip ── */
+.col-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden; margin-bottom: 24px;
+}
+.col-stat {
+    padding: 14px 16px; text-align: center;
+    border-right: 1px solid var(--border);
+}
+.col-stat:last-child { border-right: none; }
+.col-stat-val   { font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.4px; }
+.col-stat-label { font-size: 10px; color: var(--text3); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ── Favorites list ── */
+.favorites-list { display: flex; flex-direction: column; gap: 10px; }
+
+/* ── Favorite card ── */
+.fav-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px;
+    display: flex; align-items: flex-start; gap: 14px;
+    transition: border-color 0.15s;
+}
+.fav-card:hover { border-color: var(--border-hover); }
+
+.fav-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid var(--border); flex-shrink: 0; object-fit: cover;
+}
+.fav-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.fav-name {
+    font-size: 13px; font-weight: 600; color: var(--accent);
+    text-decoration: none; display: block;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fav-name:hover { text-decoration: underline; }
+.fav-name strong { font-weight: 800; }
+.fav-desc {
+    font-size: 12px; color: var(--text2); line-height: 1.45;
+    display: -webkit-box; -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical; overflow: hidden;
+}
+.fav-meta {
+    display: flex; gap: 10px; align-items: center;
+    font-size: 11px; color: var(--text2); flex-wrap: wrap;
+    margin-top: 2px;
+}
+.fav-meta-item { display: flex; align-items: center; gap: 3px; }
+.fav-saved { margin-left: auto; font-size: 10px; color: var(--text3); }
+.fav-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+/* ── Remove button ── */
+.fav-remove-btn {
+    background: none; border: 1px solid transparent;
+    border-radius: 6px; color: var(--text3); cursor: pointer;
+    padding: 5px 7px; font-size: 11px; font-family: var(--font);
+    display: flex; align-items: center; gap: 4px;
+    transition: all 0.15s;
+}
+.fav-remove-btn:hover {
+    border-color: rgba(248,81,73,0.4);
+    color: var(--danger);
+    background: rgba(248,81,73,0.08);
+}
+
+/* ── Collection group ── */
+.col-group {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden; margin-bottom: 16px;
+}
+.col-group-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+    background: var(--bg3); cursor: pointer;
+    transition: background 0.15s;
+}
+.col-group-header:hover { background: rgba(88,166,255,0.04); }
+.col-group-icon {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: var(--accent-dim); border: 1px solid rgba(88,166,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 13px;
+}
+.col-group-name {
+    font-size: 14px; font-weight: 600; color: var(--text); flex: 1;
+}
+.col-group-meta {
+    font-size: 11px; color: var(--text3); display: flex; gap: 8px; align-items: center;
+}
+.col-group-toggle {
+    color: var(--text3); transition: transform 0.2s; flex-shrink: 0;
+}
+.col-group-toggle.open { transform: rotate(180deg); }
+.col-group-body { padding: 0; }
+.col-group-body .fav-card {
+    border: none; border-bottom: 1px solid var(--border);
+    border-radius: 0;
+}
+.col-group-body .fav-card:last-child { border-bottom: none; }
+
+/* ── Uncollected section ── */
+.uncollected-header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 12px; margin-top: 24px;
+}
+.uncollected-title {
+    font-size: 13px; font-weight: 600; color: var(--text2);
+    display: flex; align-items: center; gap: 6px;
+}
+
+/* ── Empty states ── */
+.col-empty {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px; padding: 56px 20px; text-align: center;
+    color: var(--text3);
+}
+.col-empty h3 { font-size: 15px; font-weight: 600; color: var(--text2); margin-top: 12px; }
+.col-empty p  { font-size: 13px; max-width: 320px; line-height: 1.6; }
+
+/* ── Language breakdown ── */
+.lang-breakdown { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 24px; }
+.lang-break-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 10px; font-size: 11px; color: var(--text2);
+}
+
+@@media (max-width: 640px) {
+    .col-stats { grid-template-columns: repeat(2, 1fr); }
+    .col-stat:nth-child(2) { border-right: none; }
+    .col-stat:nth-child(3) { border-top: 1px solid var(--border); }
+    .fav-saved { display: none; }
+}
+</style>
+}
+
+<div class="container collections-page">
+
+    <!-- ── Page header ── -->
+    <div class="collections-header">
+        <div>
+            <h1 class="collections-title">
+                <svg width="18" height="18" viewBox="0 0 16 16" fill="var(--accent)">
+                    <path d="M1.75 1A1.75 1.75 0 000 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0016 13.25v-8.5A1.75 1.75 0 0014.25 3H7.5a.25.25 0 01-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75z"/>
+                </svg>
+                My Collections
+            </h1>
+            <p class="collections-sub">Your saved repositories and custom collections</p>
+        </div>
+        <div class="collections-user">
+            @if (!string.IsNullOrWhiteSpace(Model.AvatarUrl))
+            {
+                <img class="collections-avatar" src="@Model.AvatarUrl"
+                     alt="@Model.GitHubLogin" onerror="this.style.display='none'" />
+            }
+            <div>
+                <div class="collections-username">@@@Model.GitHubLogin</div>
+                <div class="collections-since">Member since @Model.CreatedAt.ToString("MMM yyyy")</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Stats strip ── -->
+    @{
+        var totalStars = favorites.Sum(f => f.Stars);
+        var languages  = favorites
+            .Where(f => !string.IsNullOrWhiteSpace(f.Language))
+            .GroupBy(f => f.Language!)
+            .OrderByDescending(g => g.Count())
+            .ToList();
+    }
+    <div class="col-stats">
+        <div class="col-stat">
+            <div class="col-stat-val">@favorites.Count</div>
+            <div class="col-stat-label">Favorites</div>
+        </div>
+        <div class="col-stat">
+            <div class="col-stat-val">@collections.Count</div>
+            <div class="col-stat-label">Collections</div>
+        </div>
+        <div class="col-stat">
+            <div class="col-stat-val" style="color:var(--warning)">
+                @(totalStars >= 1000 ? $"{totalStars/1000.0:F1}k" : totalStars.ToString())
+            </div>
+            <div class="col-stat-label">Total Stars</div>
+        </div>
+        <div class="col-stat">
+            <div class="col-stat-val" style="color:var(--accent)">@languages.Count</div>
+            <div class="col-stat-label">Languages</div>
+        </div>
+    </div>
+
+    <!-- ── Language breakdown ── -->
+    @if (languages.Count > 0)
+    {
+        <div class="lang-breakdown">
+            @foreach (var lg in languages.Take(10))
+            {
+                <a class="lang-break-pill"
+                   asp-controller="Explore" asp-action="Index"
+                   asp-route-language="@lg.Key"
+                   style="text-decoration:none">
+                    <span class="lang-dot" style="background:var(--text3)"></span>
+                    @lg.Key
+                    <span style="color:var(--text3)">@lg.Count()</span>
+                </a>
+            }
+        </div>
+    }
+
+    <!-- ── Tabs ── -->
+    <div class="collections-tabs">
+        <button class="col-tab active" onclick="switchTab('favorites', this)">
+            🔖 Favorites
+            <span class="col-tab-count">@favorites.Count</span>
+        </button>
+        <button class="col-tab" onclick="switchTab('collections', this)">
+            📁 Collections
+            <span class="col-tab-count">@collections.Count</span>
+        </button>
+    </div>
+
+    <!-- ══ TAB: Favorites ══════════════════════════════════ -->
+    <div class="tab-panel active" id="tab-favorites">
+        @if (favorites.Count == 0)
+        {
+            <div class="col-empty">
+                <svg width="40" height="40" viewBox="0 0 16 16" fill="currentColor" opacity="0.2">
+                    <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/>
+                </svg>
+                <h3>No favorites yet</h3>
+                <p>Click the bookmark icon on any repository card to save it here.</p>
+                <a class="btn btn-outline" asp-controller="Explore" asp-action="Index"
+                   style="margin-top:8px">Browse repositories →</a>
+            </div>
+        }
+        else
+        {
+            <div class="favorites-list">
+                @foreach (var fav in favorites)
+                {
+                    <div class="fav-card" id="fav-@fav.Id">
+                        @if (!string.IsNullOrWhiteSpace(fav.AvatarUrl))
+                        {
+                            <img class="fav-avatar" src="@fav.AvatarUrl"
+                                 alt="@fav.Owner" onerror="this.style.display='none'" />
+                        }
+                        <div class="fav-body">
+                            <a class="fav-name"
+                               asp-controller="Repo" asp-action="Detail"
+                               asp-route-owner="@fav.Owner"
+                               asp-route-name="@fav.Name">
+                                @fav.Owner/<strong>@fav.Name</strong>
+                            </a>
+                            @if (!string.IsNullOrWhiteSpace(fav.Description))
+                            {
+                                <p class="fav-desc">@fav.Description</p>
+                            }
+                            <div class="fav-meta">
+                                @if (!string.IsNullOrWhiteSpace(fav.Language))
+                                {
+                                    <span class="fav-meta-item">
+                                        <span class="lang-dot" style="background:var(--text3)"></span>
+                                        @fav.Language
+                                    </span>
+                                }
+                                <span class="fav-meta-item">
+                                    <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/>
+                                    </svg>
+                                    @(fav.Stars >= 1000 ? $"{fav.Stars/1000.0:F1}k" : fav.Stars.ToString())
+                                </span>
+                                @if (fav.Collection != null)
+                                {
+                                    <span class="fav-meta-item" style="color:var(--accent)">
+                                        📁 @fav.Collection.Name
+                                    </span>
+                                }
+                                <span class="fav-saved">
+                                    Saved @fav.SavedAt.ToString("MMM d, yyyy")
+                                </span>
+                            </div>
+                        </div>
+                        <div class="fav-actions">
+                            <form asp-controller="Account" asp-action="ToggleFavorite"
+                                  method="post" class="fav-form"
+                                  data-fav-id="@fav.Id">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="owner"       value="@fav.Owner" />
+                                <input type="hidden" name="name"        value="@fav.Name" />
+                                <input type="hidden" name="description" value="@fav.Description" />
+                                <input type="hidden" name="language"    value="@fav.Language" />
+                                <input type="hidden" name="stars"       value="@fav.Stars" />
+                                <input type="hidden" name="htmlUrl"     value="@fav.HtmlUrl" />
+                                <input type="hidden" name="avatarUrl"   value="@fav.AvatarUrl" />
+                                <button type="button" class="fav-remove-btn"
+                                        onclick="removeFav(this)"
+                                        title="Remove from favorites">
+                                    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M5.5 5.5A.5.5 0 016 6v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm2.5 0a.5.5 0 01.5.5v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm3 .5a.5.5 0 00-1 0v6a.5.5 0 001 0V6z"/>
+                                        <path fill-rule="evenodd" d="M14.5 3a1 1 0 01-1 1H13v9a2 2 0 01-2 2H5a2 2 0 01-2-2V4h-.5a1 1 0 01-1-1V2a1 1 0 011-1H6a1 1 0 011-1h2a1 1 0 011 1h3.5a1 1 0 011 1v1zM4.118 4L4 4.059V13a1 1 0 001 1h6a1 1 0 001-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                                    </svg>
+                                    Remove
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- ══ TAB: Collections ════════════════════════════════ -->
+    <div class="tab-panel" id="tab-collections">
+        @if (collections.Count == 0 && uncollected.Count == 0)
+        {
+            <div class="col-empty">
+                <svg width="40" height="40" viewBox="0 0 16 16" fill="currentColor" opacity="0.2">
+                    <path d="M1.75 1A1.75 1.75 0 000 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0016 13.25v-8.5A1.75 1.75 0 0014.25 3H7.5a.25.25 0 01-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75z"/>
+                </svg>
+                <h3>No collections yet</h3>
+                <p>Save some repositories first, then organise them into collections.</p>
+                <a class="btn btn-outline" asp-controller="Explore" asp-action="Index"
+                   style="margin-top:8px">Start exploring →</a>
+            </div>
+        }
+        else
+        {
+            <!-- Named collections -->
+            @foreach (var col in collections)
+            {
+                var colRepos = col.Repos.OrderByDescending(r => r.Stars).ToList();
+                <div class="col-group">
+                    <div class="col-group-header" onclick="toggleCollection('@col.Id')">
+                        <div class="col-group-icon">📁</div>
+                        <div class="col-group-name">@col.Name</div>
+                        <div class="col-group-meta">
+                            @colRepos.Count repo@(colRepos.Count != 1 ? "s" : "")
+                            <span>·</span>
+                            @col.CreatedAt.ToString("MMM yyyy")
+                            @if (col.IsPublic)
+                            {
+                                <span class="tag" style="font-size:9px;padding:1px 6px">public</span>
+                            }
+                        </div>
+                        <svg class="col-group-toggle" id="toggle-@col.Id"
+                             width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M1.646 4.646a.5.5 0 01.708 0L8 10.293l5.646-5.647a.5.5 0 01.708.708l-6 6a.5.5 0 01-.708 0l-6-6a.5.5 0 010-.708z"/>
+                        </svg>
+                    </div>
+                    <div class="col-group-body" id="colbody-@col.Id" style="display:none">
+                        @if (colRepos.Count == 0)
+                        {
+                            <div style="padding:20px 16px;text-align:center;font-size:12px;color:var(--text3)">
+                                This collection is empty.
+                            </div>
+                        }
+                        @foreach (var repo in colRepos)
+                        {
+                            <div class="fav-card">
+                                @if (!string.IsNullOrWhiteSpace(repo.AvatarUrl))
+                                {
+                                    <img class="fav-avatar" src="@repo.AvatarUrl"
+                                         alt="@repo.Owner" onerror="this.style.display='none'" />
+                                }
+                                <div class="fav-body">
+                                    <a class="fav-name"
+                                       asp-controller="Repo" asp-action="Detail"
+                                       asp-route-owner="@repo.Owner"
+                                       asp-route-name="@repo.Name">
+                                        @repo.Owner/<strong>@repo.Name</strong>
+                                    </a>
+                                    @if (!string.IsNullOrWhiteSpace(repo.Description))
+                                    {
+                                        <p class="fav-desc">@repo.Description</p>
+                                    }
+                                    <div class="fav-meta">
+                                        @if (!string.IsNullOrWhiteSpace(repo.Language))
+                                        {
+                                            <span class="fav-meta-item">
+                                                <span class="lang-dot" style="background:var(--text3)"></span>
+                                                @repo.Language
+                                            </span>
+                                        }
+                                        <span class="fav-meta-item">
+                                            <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+                                                <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/>
+                                            </svg>
+                                            @(repo.Stars >= 1000 ? $"{repo.Stars/1000.0:F1}k" : repo.Stars.ToString())
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Uncollected favorites -->
+            @if (uncollected.Count > 0)
+            {
+                <div class="uncollected-header">
+                    <span class="uncollected-title">
+                        🔖 Unsorted favorites
+                        <span class="col-tab-count">@uncollected.Count</span>
+                    </span>
+                </div>
+                <div class="favorites-list">
+                    @foreach (var fav in uncollected)
+                    {
+                        <div class="fav-card">
+                            @if (!string.IsNullOrWhiteSpace(fav.AvatarUrl))
+                            {
+                                <img class="fav-avatar" src="@fav.AvatarUrl"
+                                     alt="@fav.Owner" onerror="this.style.display='none'" />
+                            }
+                            <div class="fav-body">
+                                <a class="fav-name"
+                                   asp-controller="Repo" asp-action="Detail"
+                                   asp-route-owner="@fav.Owner"
+                                   asp-route-name="@fav.Name">
+                                    @fav.Owner/<strong>@fav.Name</strong>
+                                </a>
+                                @if (!string.IsNullOrWhiteSpace(fav.Description))
+                                {
+                                    <p class="fav-desc">@fav.Description</p>
+                                }
+                                <div class="fav-meta">
+                                    @if (!string.IsNullOrWhiteSpace(fav.Language))
+                                    {
+                                        <span class="fav-meta-item">
+                                            <span class="lang-dot" style="background:var(--text3)"></span>
+                                            @fav.Language
+                                        </span>
+                                    }
+                                    <span class="fav-meta-item">
+                                        <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+                                            <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/>
+                                        </svg>
+                                        @(fav.Stars >= 1000 ? $"{fav.Stars/1000.0:F1}k" : fav.Stars.ToString())
+                                    </span>
+                                    <span class="fav-saved">Saved @fav.SavedAt.ToString("MMM d, yyyy")</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+
+</div>
+
+@section Scripts {
+<script>
+    // ── Tab switching ──────────────────────────────────────
+    function switchTab(name, btn) {
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.col-tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-' + name).classList.add('active');
+        btn.classList.add('active');
+    }
+
+    // ── Toggle collection group ────────────────────────────
+    function toggleCollection(id) {
+        const body   = document.getElementById('colbody-' + id);
+        const toggle = document.getElementById('toggle-' + id);
+        const open   = body.style.display === 'none';
+        body.style.display  = open ? 'block' : 'none';
+        toggle.classList.toggle('open', open);
+    }
+
+    // ── AJAX remove favorite ───────────────────────────────
+    function removeFav(btn) {
+        const form  = btn.closest('form');
+        const card  = btn.closest('.fav-card');
+        const token = form.querySelector('[name="__RequestVerificationToken"]').value;
+
+        const data = new FormData(form);
+
+        fetch(form.action || '/account/togglefavorite', {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: data
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (!res.isFavorited) {
+                card.style.opacity    = '0';
+                card.style.transform  = 'translateX(-8px)';
+                card.style.transition = 'opacity 0.25s, transform 0.25s';
+                setTimeout(() => card.remove(), 260);
+
+                // Update counter
+                const countEl = document.querySelector('#tab-favorites')
+                    ?.previousElementSibling
+                    ?.querySelector('.col-tab-count');
+                // Re-check empty state after removal
+                setTimeout(() => {
+                    const list = document.querySelector('.favorites-list');
+                    if (list && list.children.length === 0) {
+                        location.reload();
+                    }
+                }, 300);
+            }
+        })
+        .catch(() => form.submit()); // fallback
+    }
+</script>
+}

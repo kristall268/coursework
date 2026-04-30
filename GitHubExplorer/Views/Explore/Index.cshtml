@@ -3,7 +3,6 @@
     ViewData["Title"]      = "Explore Repositories";
     ViewData["ActivePage"] = "Explore";
 
-    // Active filter pills
     var activeFilters = new List<(string Label, string Param)>();
     if (!string.IsNullOrWhiteSpace(Model.Filter.Language)) activeFilters.Add(($"Language: {Model.Filter.Language}", "language"));
     if (!string.IsNullOrWhiteSpace(Model.Filter.Topic))    activeFilters.Add(($"Topic: {Model.Filter.Topic}",       "topic"));
@@ -47,7 +46,6 @@
 .filter-left  { display: flex; align-items: center; gap: 6px; flex: 1; flex-wrap: wrap; }
 .filter-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 
-/* ── Filter dropdown ── */
 .filter-select {
     background: var(--bg3); border: 1px solid var(--border);
     border-radius: 6px; color: var(--text2); padding: 6px 10px;
@@ -64,7 +62,6 @@
 .filter-select.active { border-color: var(--accent); color: var(--text); }
 .filter-select option { background: var(--bg3); }
 
-/* Stars range input */
 .stars-input {
     background: var(--bg3); border: 1px solid var(--border);
     border-radius: 6px; color: var(--text2); padding: 6px 10px;
@@ -74,7 +71,11 @@
 .stars-input:focus { border-color: var(--accent); color: var(--text); }
 .stars-input::placeholder { color: var(--text3); }
 
-/* Sort + order */
+/* Remove number input arrows */
+.stars-input::-webkit-outer-spin-button,
+.stars-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.stars-input[type=number] { -moz-appearance: textfield; }
+
 .sort-wrap { display: flex; align-items: center; gap: 0; }
 .sort-select {
     background: var(--bg3); border: 1px solid var(--border);
@@ -118,7 +119,7 @@
 }
 .clear-all:hover { color: var(--danger); }
 
-/* ── Main layout ── */
+/* ── Layout ── */
 .explore-layout {
     display: grid;
     grid-template-columns: 1fr 260px;
@@ -137,29 +138,6 @@
 
 /* ── Repo list ── */
 .repo-list { display: flex; flex-direction: column; gap: 10px; }
-
-/* ── Loading skeleton ── */
-.skeleton-card {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 16px;
-    display: flex; flex-direction: column; gap: 10px;
-}
-@@keyframes shimmer {
-    0%   { background-position: -600px 0; }
-    100% { background-position: 600px 0; }
-}
-.skel {
-    background: linear-gradient(90deg,
-        var(--bg3) 0%, rgba(88,166,255,0.06) 50%, var(--bg3) 100%);
-    background-size: 600px 100%;
-    animation: shimmer 1.4s infinite linear;
-    border-radius: 4px;
-}
-.skel-title { height: 14px; width: 220px; }
-.skel-desc1 { height: 11px; width: 100%; }
-.skel-desc2 { height: 11px; width: 75%; }
-.skel-tags  { height: 20px; width: 160px; border-radius: 20px; }
-.skel-foot  { height: 11px; width: 280px; }
 
 /* ── Pagination ── */
 .pagination {
@@ -220,8 +198,8 @@
 }
 @@media (max-width: 600px) {
     .filter-left { gap: 4px; }
-    .filter-select, .stars-input { font-size: 11px; }}
-
+    .filter-select, .stars-input { font-size: 11px; }
+}
 </style>
 }
 
@@ -255,7 +233,7 @@
                     <!-- Language -->
                     <select class="filter-select @(!string.IsNullOrWhiteSpace(Model.Filter.Language) ? "active" : "")"
                             name="language"
-                            onchange="document.getElementById('filter-form').submit()">
+                            onchange="submitFilter()">
                         <option value="">All Languages</option>
                         @foreach (var lang in new[] {
                             "C#","JavaScript","TypeScript","Python","Go",
@@ -266,24 +244,26 @@
                         }
                     </select>
 
-                    <!-- Stars -->
+                    <!-- Min Stars -->
                     <input class="stars-input"
-                           type="number" name="minStars" min="0"
+                           type="number" name="minStars" min="0" step="100"
                            value="@Model.Filter.MinStars"
                            placeholder="Min stars"
-                           onchange="document.getElementById('filter-form').submit()" />
+                           id="stars-input"
+                           onkeydown="if(event.key==='Enter'){event.preventDefault();submitFilter();}" />
 
                     <!-- Topic -->
                     <input class="stars-input" style="width:130px"
                            type="text" name="topic"
                            value="@Model.Filter.Topic"
                            placeholder="Topic…"
-                           onchange="document.getElementById('filter-form').submit()" />
+                           id="topic-input"
+                           onkeydown="if(event.key==='Enter'){event.preventDefault();submitFilter();}" />
 
                     <!-- License -->
                     <select class="filter-select @(!string.IsNullOrWhiteSpace(Model.Filter.License) ? "active" : "")"
                             name="license"
-                            onchange="document.getElementById('filter-form').submit()">
+                            onchange="submitFilter()">
                         <option value="">Any License</option>
                         @foreach (var lic in new[] { "MIT","Apache-2.0","GPL-2.0","GPL-3.0","BSD-2-Clause","BSD-3-Clause","LGPL-2.1","MPL-2.0","AGPL-3.0","Unlicense" })
                         {
@@ -293,18 +273,16 @@
 
                 </div>
 
-                <!-- Right: sort -->
+                <!-- Right: sort + order -->
                 <div class="filter-right">
                     <div class="sort-wrap">
-                        <select class="sort-select" name="sort"
-                                onchange="document.getElementById('filter-form').submit()">
+                        <select class="sort-select" name="sort" onchange="submitFilter()">
                             <option value="stars"   selected="@(Model.Filter.Sort == "stars")">Sort: Stars</option>
                             <option value="forks"   selected="@(Model.Filter.Sort == "forks")">Sort: Forks</option>
                             <option value="updated" selected="@(Model.Filter.Sort == "updated")">Sort: Updated</option>
                         </select>
                         <button type="button" class="order-btn"
                                 onclick="toggleOrder()"
-                                title="Toggle sort direction"
                                 id="order-btn">
                             @(Model.Filter.Order == "asc" ? "↑ Asc" : "↓ Desc")
                         </button>
@@ -312,7 +290,7 @@
                     </div>
                 </div>
 
-                <!-- Keep query in hidden field -->
+                <!-- Preserve query -->
                 <input type="hidden" name="query" value="@Model.Filter.Query" />
             </div>
 
@@ -325,7 +303,7 @@
                         <span class="filter-pill">
                             @label
                             <button type="button" class="filter-pill-remove"
-                                    onclick="removeFilter('@param')" title="Remove filter">×</button>
+                                    onclick="removeFilter('@param')">×</button>
                         </span>
                     }
                     <button type="button" class="clear-all" onclick="clearAllFilters()">Clear all</button>
@@ -416,45 +394,46 @@
 
 @section Scripts {
 <script>
+    // ── Submit form helper ─────────────────────────────────
+    function submitFilter() {
+        document.getElementById('filter-form').submit();
+    }
+
     // ── Toggle sort order ──────────────────────────────────
     function toggleOrder() {
         const input = document.getElementById('order-input');
         const btn   = document.getElementById('order-btn');
         if (input.value === 'desc') {
-            input.value  = 'asc';
+            input.value     = 'asc';
             btn.textContent = '↑ Asc';
         } else {
-            input.value  = 'desc';
+            input.value     = 'desc';
             btn.textContent = '↓ Desc';
         }
-        document.getElementById('filter-form').submit();
+        submitFilter();
     }
 
     // ── Remove single filter pill ──────────────────────────
     function removeFilter(param) {
         const form = document.getElementById('filter-form');
         const el   = form.querySelector(`[name="${param}"]`);
-        if (el) {
-            if (el.tagName === 'SELECT') el.value = '';
-            else el.value = '';
-        }
-        form.submit();
+        if (el) el.value = '';
+        submitFilter();
     }
 
-    // ── Clear all filters (keep query) ────────────────────
+    // ── Clear all filters ──────────────────────────────────
     function clearAllFilters() {
         const form = document.getElementById('filter-form');
         form.querySelectorAll('select').forEach(s => s.value = '');
-        ['minStars','topic','license'].forEach(n => {
+        ['minStars', 'topic', 'license'].forEach(n => {
             const el = form.querySelector(`[name="${n}"]`);
             if (el) el.value = '';
         });
-        form.submit();
+        submitFilter();
     }
 
-    // ── Apply preset ──────────────────────────────────────
+    // ── Apply preset ───────────────────────────────────────
     function applyPreset(params) {
-        // Build URL from current query + preset params
         const url = new URL(window.location.origin + '/explore');
         const q   = document.querySelector('[name="query"]')?.value;
         if (q) url.searchParams.set('query', q);
@@ -464,24 +443,14 @@
         window.location = url.toString();
     }
 
-    // ── AJAX filter (debounced text inputs) ───────────────
+    // ── Debounced submit for text/number inputs ────────────
     let debounceTimer;
-    document.querySelectorAll('.stars-input').forEach(input => {
-        input.addEventListener('input', () => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                document.getElementById('filter-form').submit();
-            }, 600);
-        });
-    });
+    function debounceSubmit() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => submitFilter(), 700);
+    }
 
-    // ── Keyboard: focus search on / ───────────────────────
-    // (already handled globally in _Layout, but topic input needs Enter)
-    document.querySelector('[name="topic"]')?.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            document.getElementById('filter-form').submit();
-        }
-    });
+    document.getElementById('stars-input')?.addEventListener('input', debounceSubmit);
+    document.getElementById('topic-input')?.addEventListener('input', debounceSubmit);
 </script>
 }

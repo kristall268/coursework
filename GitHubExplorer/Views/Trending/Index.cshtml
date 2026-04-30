@@ -1,0 +1,460 @@
+@model GitHubExplorer.Models.ViewModels.TrendingViewModel
+@{
+    ViewData["Title"]      = "Trending Repositories";
+    ViewData["ActivePage"] = "Trending";
+
+    var periods = new[] {
+        ("daily",   "Today"),
+        ("weekly",  "This week"),
+        ("monthly", "This month")
+    };
+
+    var languages = new[] {
+        ("all",        "All Languages", ""),
+        ("javascript", "JavaScript",    "#f1e05a"),
+        ("typescript", "TypeScript",    "#3178c6"),
+        ("python",     "Python",        "#3572A5"),
+        ("go",         "Go",            "#00ADD8"),
+        ("rust",       "Rust",          "#dea584"),
+        ("c#",         "C#",            "#178600"),
+        ("java",       "Java",          "#b07219"),
+        ("kotlin",     "Kotlin",        "#A97BFF"),
+        ("swift",      "Swift",         "#F05138"),
+        ("ruby",       "Ruby",          "#701516"),
+        ("php",        "PHP",           "#4F5D95"),
+        ("c",          "C",             "#555555"),
+        ("c++",        "C++",           "#f34b7d"),
+        ("shell",      "Shell",         "#89e051"),
+        ("dart",       "Dart",          "#00B4AB"),
+    };
+
+    var sinceLabel = Model.Since switch {
+        "weekly"  => "this week",
+        "monthly" => "this month",
+        _         => "today"
+    };
+
+    var langLabel = languages.FirstOrDefault(l => l.Item1 == Model.Language.ToLower()).Item2
+                   ?? Model.Language;
+}
+
+@section Styles {
+<style>
+/* ── Header ── */
+.trending-header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 0 0;
+}
+.trending-header-top {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; gap: 16px;
+    flex-wrap: wrap; margin-bottom: 20px;
+}
+.trending-title {
+    font-size: 20px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.4px; display: flex; align-items: center; gap: 10px;
+}
+.trending-subtitle {
+    font-size: 13px; color: var(--text2); margin-top: 4px; line-height: 1.5;
+}
+
+/* ── Tabs: period ── */
+.period-tabs {
+    display: flex; gap: 0;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden; padding: 3px;
+}
+.period-tab {
+    padding: 6px 16px; font-size: 12px; font-weight: 500;
+    color: var(--text2); text-decoration: none; border-radius: 6px;
+    transition: all 0.15s; white-space: nowrap;
+}
+.period-tab:hover { color: var(--text); text-decoration: none; }
+.period-tab.active {
+    background: var(--bg2); color: var(--accent);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+/* ── Language filter strip ── */
+.lang-strip-bar {
+    display: flex; gap: 6px; flex-wrap: nowrap;
+    overflow-x: auto; padding-bottom: 12px;
+    scrollbar-width: none;
+}
+.lang-strip-bar::-webkit-scrollbar { display: none; }
+.lang-pill-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 20px; padding: 5px 12px;
+    font-size: 12px; color: var(--text2); text-decoration: none;
+    flex-shrink: 0; transition: all 0.15s; white-space: nowrap;
+}
+.lang-pill-btn:hover { color: var(--text); border-color: var(--border-hover); text-decoration: none; }
+.lang-pill-btn.active {
+    background: var(--accent-dim); border-color: var(--accent);
+    color: var(--accent); font-weight: 600;
+}
+
+/* ── Main layout ── */
+.trending-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 24px;
+    padding: 28px 0 56px;
+    align-items: start;
+}
+
+/* ── Repo list ── */
+.trending-list { display: flex; flex-direction: column; gap: 0; }
+
+/* Numbered trending cards */
+.trending-item {
+    display: flex; gap: 16px; align-items: flex-start;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+}
+.trending-item:first-child { padding-top: 0; }
+.trending-item:last-child  { border-bottom: none; }
+
+.trending-rank {
+    font-size: 18px; font-weight: 700; color: var(--text3);
+    min-width: 28px; text-align: right; flex-shrink: 0;
+    margin-top: 2px; font-variant-numeric: tabular-nums;
+    font-family: var(--mono);
+}
+.trending-rank.top3 { color: var(--warning); }
+
+.trending-card {
+    flex: 1; min-width: 0;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 8px;
+    transition: border-color 0.15s;
+}
+.trending-card:hover { border-color: var(--border-hover); }
+
+.trending-card-header {
+    display: flex; align-items: center; gap: 8px; min-width: 0;
+}
+.trending-card-header img {
+    width: 20px; height: 20px; border-radius: 50%;
+    flex-shrink: 0; object-fit: cover;
+}
+.trending-fullname {
+    color: var(--accent); font-weight: 600; font-size: 13px;
+    flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    text-decoration: none;
+}
+.trending-fullname:hover { text-decoration: underline; }
+.trending-fullname strong { font-weight: 700; }
+
+.trending-desc {
+    font-size: 12px; color: var(--text2); line-height: 1.55;
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
+}
+
+.trending-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+
+.trending-footer {
+    display: flex; gap: 14px; align-items: center;
+    font-size: 11px; color: var(--text2); flex-wrap: wrap;
+    padding-top: 8px; border-top: 1px solid var(--border);
+}
+.trending-footer-item { display: flex; align-items: center; gap: 4px; }
+.trending-footer-item svg { opacity: 0.7; }
+
+.stars-gained {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(63,185,80,0.12); border: 1px solid rgba(63,185,80,0.3);
+    border-radius: 20px; padding: 2px 8px;
+    font-size: 10px; color: var(--success); font-weight: 600;
+    white-space: nowrap;
+}
+
+/* ── Sidebar ── */
+.trending-sidebar { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 80px; }
+.sidebar-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+.sidebar-title { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+
+.sidebar-repo-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 0; border-bottom: 1px solid var(--border);
+    text-decoration: none; transition: padding-left 0.12s;
+}
+.sidebar-repo-row:last-child { border-bottom: none; }
+.sidebar-repo-row:hover { padding-left: 4px; text-decoration: none; }
+.sidebar-repo-row img {
+    width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; object-fit: cover;
+}
+.sidebar-repo-name {
+    flex: 1; font-size: 11px; color: var(--accent); font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sidebar-repo-stars { font-size: 10px; color: var(--text3); flex-shrink: 0; }
+
+.empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 6px; padding: 60px 20px; text-align: center; color: var(--text3);
+}
+.empty-state p    { font-size: 14px; font-weight: 500; color: var(--text2); margin-top: 12px; }
+.empty-state span { font-size: 12px; }
+
+@@media (max-width: 960px) {
+    .trending-layout { grid-template-columns: 1fr; }
+    .trending-sidebar { display: none; }
+}
+@@media (max-width: 600px) {
+    .trending-rank { display: none; }
+    .trending-item { gap: 0; }
+    .period-tab { padding: 5px 10px; font-size: 11px; }
+}
+</style>
+}
+
+<!-- ── Header ── -->
+<div class="trending-header">
+    <div class="container">
+        <div class="trending-header-top">
+            <div>
+                <h1 class="trending-title">
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="var(--warning)">
+                        <path fill-rule="evenodd" d="M0 0h1v15h15v1H0V0zm10 3.5a.5.5 0 01.5-.5h4a.5.5 0 01.5.5v4a.5.5 0 01-1 0V4.9l-3.613 4.417a.5.5 0 01-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 01-.808-.588l4-5.5a.5.5 0 01.758-.06l2.609 2.61L13.445 4H10.5a.5.5 0 01-.5-.5z"/>
+                    </svg>
+                    Trending
+                    @if (Model.Language != "all" && !string.IsNullOrWhiteSpace(Model.Language))
+                    {
+                        <span style="color:var(--text2);font-weight:400">·</span>
+                        <span style="font-size:16px;font-weight:600">@langLabel</span>
+                    }
+                </h1>
+                <p class="trending-subtitle">
+                    Most starred repositories @sinceLabel
+                    @if (Model.Repositories.Count > 0)
+                    {
+                        <span style="color:var(--text3)">— @Model.Repositories.Count repos</span>
+                    }
+                </p>
+            </div>
+
+            <!-- Period tabs -->
+            <div class="period-tabs">
+                @foreach (var (val, label) in periods)
+                {
+                    <a class="period-tab @(Model.Since == val ? "active" : "")"
+                       asp-controller="Trending" asp-action="Index"
+                       asp-route-language="@Model.Language"
+                       asp-route-since="@val">
+                        @label
+                    </a>
+                }
+            </div>
+        </div>
+
+        <!-- Language pills -->
+        <div class="lang-strip-bar">
+            @foreach (var (val, label, color) in languages)
+            {
+                var isActive = Model.Language.ToLower() == val;
+                <a class="lang-pill-btn @(isActive ? "active" : "")"
+                   asp-controller="Trending" asp-action="Index"
+                   asp-route-language="@val"
+                   asp-route-since="@Model.Since">
+                    @if (!string.IsNullOrEmpty(color))
+                    {
+                        <span class="lang-dot" style="background:@color"></span>
+                    }
+                    @label
+                </a>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- ── Main content ── -->
+<div class="container">
+    <div class="trending-layout">
+
+        <!-- Repo list -->
+        <main>
+            @if (Model.Repositories.Count > 0)
+            {
+                <div class="trending-list">
+                    @for (int i = 0; i < Model.Repositories.Count; i++)
+                    {
+                        var repo = Model.Repositories[i];
+                        <div class="trending-item">
+                            <span class="trending-rank @(i < 3 ? "top3" : "")">@(i + 1)</span>
+                            <div class="trending-card">
+                                <!-- Header -->
+                                <div class="trending-card-header">
+                                    @if (!string.IsNullOrWhiteSpace(repo.OwnerAvatarUrl))
+                                    {
+                                        <img src="@repo.OwnerAvatarUrl" alt="@repo.Owner"
+                                             loading="lazy" onerror="this.style.display='none'" />
+                                    }
+                                    <a class="trending-fullname"
+                                       asp-controller="Repo" asp-action="Detail"
+                                       asp-route-owner="@repo.Owner"
+                                       asp-route-name="@repo.Name"
+                                       title="@repo.FullName">
+                                        @repo.Owner/<strong>@repo.Name</strong>
+                                    </a>
+                                    <span class="badge-trending">🔥 Trending</span>
+                                </div>
+
+                                <!-- Description -->
+                                @if (!string.IsNullOrWhiteSpace(repo.Description))
+                                {
+                                    <p class="trending-desc">@repo.Description</p>
+                                }
+
+                                <!-- Topics -->
+                                @if (repo.Topics.Count > 0)
+                                {
+                                    <div class="trending-tags">
+                                        @foreach (var topic in repo.Topics.Take(4))
+                                        {
+                                            <a class="tag"
+                                               asp-controller="Explore" asp-action="Index"
+                                               asp-route-topic="@topic"
+                                               style="text-decoration:none">@topic</a>
+                                        }
+                                        @if (repo.Topics.Count > 4)
+                                        {
+                                            <span class="tag" style="opacity:0.6">+@(repo.Topics.Count - 4)</span>
+                                        }
+                                    </div>
+                                }
+
+                                <!-- Footer -->
+                                <div class="trending-footer">
+                                    @if (!string.IsNullOrWhiteSpace(repo.Language))
+                                    {
+                                        <span class="trending-footer-item">
+                                            <span class="lang-dot" style="background:@(repo.LanguageColor ?? "#8b949e")"></span>
+                                            @repo.Language
+                                        </span>
+                                    }
+                                    <span class="trending-footer-item">
+                                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                                            <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/>
+                                        </svg>
+                                        @repo.StarsFormatted
+                                    </span>
+                                    <span class="trending-footer-item">
+                                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" opacity="0.6">
+                                            <path d="M5 3.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm0 2.122a2.25 2.25 0 10-1.5 0v.878A2.25 2.25 0 005.75 8.5h1.5v2.128a2.251 2.251 0 101.5 0V8.5h1.5a2.25 2.25 0 002.25-2.25v-.878a2.25 2.25 0 10-1.5 0v.878a.75.75 0 01-.75.75h-4.5A.75.75 0 015 6.25v-.878zm3.75 7.378a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm3-8.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/>
+                                        </svg>
+                                        @(repo.Forks >= 1000 ? $"{repo.Forks/1000.0:F1}k" : repo.Forks.ToString())
+                                    </span>
+                                    @if (!string.IsNullOrWhiteSpace(repo.License))
+                                    {
+                                        <span style="background:var(--bg3);padding:1px 7px;border-radius:20px;font-size:10px;color:var(--text3)">
+                                            @repo.License
+                                        </span>
+                                    }
+                                    <span class="stars-gained">
+                                        ↑ @repo.StarsFormatted stars @sinceLabel
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Compare shortcut -->
+                <div style="margin-top:24px;padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                    <div>
+                        <div style="font-size:13px;font-weight:600;color:var(--text)">Want to compare trending repos?</div>
+                        <div style="font-size:11px;color:var(--text2);margin-top:2px">Side-by-side stats for any two repositories</div>
+                    </div>
+                    <a class="btn btn-outline" asp-controller="Compare" asp-action="Index"
+                       style="font-size:12px">⚖️ Compare repos →</a>
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <svg width="40" height="40" viewBox="0 0 16 16" fill="currentColor" opacity="0.2">
+                        <path fill-rule="evenodd" d="M0 0h1v15h15v1H0V0zm10 3.5a.5.5 0 01.5-.5h4a.5.5 0 01.5.5v4a.5.5 0 01-1 0V4.9l-3.613 4.417a.5.5 0 01-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 01-.808-.588l4-5.5a.5.5 0 01.758-.06l2.609 2.61L13.445 4H10.5a.5.5 0 01-.5-.5z"/>
+                    </svg>
+                    <p>No trending repositories found.</p>
+                    <span>Try a different language or time period.</span>
+                    <a class="btn btn-outline" asp-controller="Trending" asp-action="Index"
+                       asp-route-language="all" asp-route-since="daily"
+                       style="margin-top:14px;display:inline-flex">
+                        Show all languages
+                    </a>
+                </div>
+            }
+        </main>
+
+        <!-- Sidebar -->
+        <aside class="trending-sidebar">
+
+            <!-- Top repos this period -->
+            @if (Model.Repositories.Count > 0)
+            {
+                <div class="sidebar-card">
+                    <div class="sidebar-title">
+                        🏆 Top 5 @sinceLabel
+                    </div>
+                    @foreach (var repo in Model.Repositories.Take(5))
+                    {
+                        <a class="sidebar-repo-row"
+                           asp-controller="Repo" asp-action="Detail"
+                           asp-route-owner="@repo.Owner"
+                           asp-route-name="@repo.Name">
+                            @if (!string.IsNullOrWhiteSpace(repo.OwnerAvatarUrl))
+                            {
+                                <img src="@repo.OwnerAvatarUrl" alt="@repo.Owner"
+                                     onerror="this.style.display='none'" />
+                            }
+                            <span class="sidebar-repo-name">@repo.FullName</span>
+                            <span class="sidebar-repo-stars">⭐ @repo.StarsFormatted</span>
+                        </a>
+                    }
+                </div>
+            }
+
+            <!-- Period switcher -->
+            <div class="sidebar-card">
+                <div class="sidebar-title">Time period</div>
+                @foreach (var (val, label) in periods)
+                {
+                    <a class="sidebar-repo-row"
+                       asp-controller="Trending" asp-action="Index"
+                       asp-route-language="@Model.Language"
+                       asp-route-since="@val"
+                       style="@(Model.Since == val ? "color:var(--accent);font-weight:600" : "")">
+                        <span style="font-size:12px;color:@(Model.Since == val ? "var(--accent)" : "var(--text2)")">
+                            @(val == "daily" ? "📅" : val == "weekly" ? "📆" : "🗓️") @label
+                        </span>
+                        @if (Model.Since == val)
+                        {
+                            <span style="font-size:10px;color:var(--accent)">✓ active</span>
+                        }
+                    </a>
+                }
+            </div>
+
+            <!-- Explore CTA -->
+            <div class="sidebar-card" style="text-align:center;border-color:rgba(88,166,255,0.2)">
+                <div style="font-size:22px;margin-bottom:8px">🔍</div>
+                <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">Explore all repos</div>
+                <div style="font-size:11px;color:var(--text2);margin-bottom:14px;line-height:1.5">
+                    Filter by language, stars, topics and more.
+                </div>
+                <a class="btn btn-outline" asp-controller="Explore" asp-action="Index"
+                   style="width:100%;justify-content:center;font-size:12px">
+                    Open Explorer →
+                </a>
+            </div>
+
+        </aside>
+    </div>
+</div>

@@ -1,0 +1,235 @@
+@{
+    ViewData["Title"]      = "Sign In — GitExplorer";
+    ViewData["ActivePage"] = "";
+    var returnUrl = ViewData["ReturnUrl"]?.ToString();
+}
+
+@section Styles {
+<style>
+/* ── Page wrapper ── */
+.login-page {
+    min-height: calc(100vh - var(--nav-h) - 80px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px 20px;
+}
+
+/* ── Card ── */
+.login-card {
+    width: 100%; max-width: 400px;
+    display: flex; flex-direction: column; gap: 0;
+}
+
+/* ── Logo block ── */
+.login-logo {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 12px; margin-bottom: 28px; text-align: center;
+}
+.login-logo-icon {
+    width: 56px; height: 56px;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 14px; display: flex; align-items: center;
+    justify-content: center;
+}
+.login-logo-title {
+    font-size: 22px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.4px;
+}
+.login-logo-sub {
+    font-size: 13px; color: var(--text2); margin-top: -6px;
+}
+
+/* ── Box ── */
+.login-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* ── Box header ── */
+.login-box-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+}
+.login-box-title {
+    font-size: 16px; font-weight: 600; color: var(--text);
+    margin-bottom: 4px;
+}
+.login-box-sub {
+    font-size: 12px; color: var(--text2); line-height: 1.5;
+}
+
+/* ── Box body ── */
+.login-box-body {
+    padding: 24px;
+    display: flex; flex-direction: column; gap: 12px;
+}
+
+/* ── GitHub button ── */
+.github-signin-btn {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; width: 100%;
+    background: var(--text); color: var(--bg);
+    border: none; border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 14px; font-weight: 600;
+    font-family: var(--font); cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    text-decoration: none;
+}
+.github-signin-btn:hover {
+    opacity: 0.88; transform: translateY(-1px);
+    text-decoration: none; color: var(--bg);
+}
+.github-signin-btn:active { transform: translateY(0); }
+
+/* ── Divider ── */
+.login-divider {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 11px; color: var(--text3);
+}
+.login-divider::before,
+.login-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+/* ── Feature list ── */
+.login-features {
+    display: flex; flex-direction: column; gap: 8px;
+}
+.login-feature {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 12px; color: var(--text2); line-height: 1.4;
+}
+.login-feature-icon {
+    width: 20px; height: 20px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 11px; margin-top: 1px;
+}
+
+/* ── Box footer ── */
+.login-box-footer {
+    padding: 14px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--bg3);
+    text-align: center;
+    font-size: 11px; color: var(--text3); line-height: 1.6;
+}
+.login-box-footer a { color: var(--text2); }
+.login-box-footer a:hover { color: var(--accent); }
+
+/* ── Guest continue ── */
+.guest-continue {
+    text-align: center; margin-top: 16px;
+    font-size: 12px; color: var(--text3);
+}
+.guest-continue a { color: var(--text2); }
+.guest-continue a:hover { color: var(--accent); }
+
+/* ── Return URL notice ── */
+.login-return-notice {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--accent-dim); border: 1px solid rgba(88,166,255,0.25);
+    border-radius: 8px; padding: 10px 14px;
+    font-size: 12px; color: var(--text2);
+    margin-bottom: 4px;
+}
+</style>
+}
+
+<div class="login-page">
+    <div class="login-card">
+
+        <!-- Logo -->
+        <div class="login-logo">
+            <div class="login-logo-icon">
+                <svg width="32" height="32" viewBox="0 0 28 28" fill="none">
+                    <path d="M14 3.5C8.75 3.5 4.5 7.75 4.5 13c0 4.12 2.67 7.62 6.37 8.85.47.09.64-.2.64-.45v-1.57c-2.6.56-3.14-1.25-3.14-1.25-.42-1.08-1.03-1.37-1.03-1.37-.84-.58.06-.57.06-.57.93.07 1.42.96 1.42.96.83 1.42 2.18 1.01 2.71.77.08-.6.32-1.01.58-1.24-2.07-.24-4.25-1.04-4.25-4.6 0-1.02.36-1.85.96-2.5-.1-.23-.42-1.18.09-2.46 0 0 .78-.25 2.57.96A8.84 8.84 0 0114 8.08c.79 0 1.59.11 2.34.31 1.79-1.21 2.57-.96 2.57-.96.51 1.28.19 2.23.09 2.46.6.65.96 1.48.96 2.5 0 3.57-2.18 4.36-4.25 4.6.33.29.63.86.63 1.73v2.56c0 .25.17.54.64.45C20.84 20.62 23.5 17.12 23.5 13 23.5 7.75 19.25 3.5 14 3.5z" fill="#58a6ff"/>
+                </svg>
+            </div>
+            <div>
+                <div class="login-logo-title">GitExplorer</div>
+                <div class="login-logo-sub">Open Source Discovery</div>
+            </div>
+        </div>
+
+        <!-- Card box -->
+        <div class="login-box">
+
+            <!-- Header -->
+            <div class="login-box-header">
+                <div class="login-box-title">Sign in to GitExplorer</div>
+                <div class="login-box-sub">
+                    Use your GitHub account to access<br>favorites, collections and more
+                </div>
+            </div>
+
+            <!-- Body -->
+            <div class="login-box-body">
+
+                <!-- Return URL notice -->
+                @if (!string.IsNullOrWhiteSpace(returnUrl))
+                {
+                    <div class="login-return-notice">
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="var(--accent)">
+                            <path d="M8 1a7 7 0 100 14A7 7 0 008 1zM0 8a8 8 0 1116 0A8 8 0 010 8zm6.5 1.5a1 1 0 102 0 1 1 0 00-2 0zm-1-4a.5.5 0 01.5-.5h2a.5.5 0 010 1H8v2.5a.5.5 0 01-1 0V5.5a.5.5 0 01.5-.5z"/>
+                        </svg>
+                        Sign in to continue to your destination
+                    </div>
+                }
+
+                <!-- GitHub OAuth button -->
+                <a class="github-signin-btn"
+                   asp-controller="Account" asp-action="SignIn"
+                   asp-route-returnUrl="@returnUrl">
+                    <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                    </svg>
+                    Continue with GitHub
+                </a>
+
+                <div class="login-divider">what you get</div>
+
+                <!-- Features -->
+                <div class="login-features">
+                    <div class="login-feature">
+                        <div class="login-feature-icon" style="background:rgba(88,166,255,0.12)">🔖</div>
+                        <div>
+                            <strong style="color:var(--text)">Save favorites</strong><br>
+                            Bookmark repositories and access them anytime
+                        </div>
+                    </div>
+                    <div class="login-feature">
+                        <div class="login-feature-icon" style="background:rgba(63,185,80,0.12)">📁</div>
+                        <div>
+                            <strong style="color:var(--text)">Create collections</strong><br>
+                            Organise repos into named groups
+                        </div>
+                    </div>
+                    <div class="login-feature">
+                        <div class="login-feature-icon" style="background:rgba(210,153,34,0.12)">⚡</div>
+                        <div>
+                            <strong style="color:var(--text)">Higher API limits</strong><br>
+                            Authenticated requests get 5 000 req/hour
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="login-box-footer">
+                By signing in you agree to GitHub's
+                <a href="https://docs.github.com/en/site-policy/github-terms/github-terms-of-service" target="_blank">Terms of Service</a>.
+                GitExplorer only requests read-only access to your public profile.
+            </div>
+        </div>
+
+        <!-- Guest continue -->
+        <div class="guest-continue">
+            No account needed to browse ·
+            <a asp-controller="Explore" asp-action="Index">Continue as guest →</a>
+        </div>
+
+    </div>
+</div>

@@ -1,0 +1,440 @@
+@model GitHubExplorer.Models.ViewModels.UserProfileViewModel
+@{
+    ViewData["Title"]      = $"{Model.Login} — Profile";
+    ViewData["ActivePage"] = "";
+
+    var joinYear = Model.CreatedAt.Year;
+    var memberFor = DateTime.UtcNow.Year - joinYear;
+}
+
+@section Styles {
+    <style>
+/* ── Layout ── */
+.profile-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 28px;
+    padding: 32px 0 56px;
+    align-items: start;
+}
+
+/* ── Sidebar / user card ── */
+.user-card {
+    position: sticky; top: 80px;
+    display: flex; flex-direction: column; gap: 16px;
+}
+
+.user-avatar-wrap {
+    position: relative; display: inline-block;
+}
+.user-avatar {
+    width: 100%; max-width: 260px;
+    aspect-ratio: 1; border-radius: 50%;
+    border: 3px solid var(--border);
+    display: block; object-fit: cover;
+    transition: border-color 0.2s;
+}
+.user-avatar:hover { border-color: var(--accent); }
+
+.user-info { display: flex; flex-direction: column; gap: 8px; }
+
+.user-display-name {
+    font-size: 20px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.3px; line-height: 1.2;
+}
+.user-login {
+    font-size: 16px; color: var(--text2); font-weight: 400;
+    margin-top: -4px;
+}
+
+.user-bio {
+    font-size: 13px; color: var(--text2); line-height: 1.6;
+    padding: 10px 12px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 6px; border-left: 3px solid var(--accent);
+}
+
+.user-meta { display: flex; flex-direction: column; gap: 6px; }
+.user-meta-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--text2);
+}
+.user-meta-row svg { flex-shrink: 0; color: var(--text3); }
+.user-meta-row a { color: var(--accent); }
+.user-meta-row a:hover { text-decoration: underline; }
+
+/* ── Follow stats ── */
+.follow-stats {
+    display: flex; gap: 0;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden;
+}
+.follow-stat {
+    flex: 1; padding: 12px 8px; text-align: center;
+    border-right: 1px solid var(--border);
+    text-decoration: none; transition: background 0.15s;
+}
+.follow-stat:last-child { border-right: none; }
+.follow-stat:hover { background: var(--bg2); text-decoration: none; }
+.follow-stat-val   { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+.follow-stat-label { font-size: 10px; color: var(--text3); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ── GitHub link button ── */
+.github-link-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 6px; padding: 9px 16px;
+    font-size: 13px; font-weight: 500; color: var(--text);
+    text-decoration: none; transition: all 0.15s;
+}
+.github-link-btn:hover {
+    border-color: var(--accent); background: var(--accent-dim);
+    text-decoration: none; color: var(--text);
+}
+
+/* ── Main content ── */
+.profile-main { display: flex; flex-direction: column; gap: 20px; }
+
+/* ── Section header ── */
+.section-hdr {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+}
+.section-hdr-title {
+    font-size: 14px; font-weight: 600; color: var(--text);
+    display: flex; align-items: center; gap: 8px;
+}
+.section-hdr-count {
+    font-size: 11px; color: var(--text3); background: var(--bg3);
+    border: 1px solid var(--border); border-radius: 20px; padding: 1px 8px;
+}
+.section-hdr-link { font-size: 12px; color: var(--accent); }
+.section-hdr-link:hover { text-decoration: underline; }
+
+/* ── Stats strip ── */
+.profile-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden;
+}
+.profile-stat {
+    padding: 16px; text-align: center;
+    border-right: 1px solid var(--border);
+}
+.profile-stat:last-child { border-right: none; }
+.profile-stat-val   { font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
+.profile-stat-label { font-size: 11px; color: var(--text3); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ── Repo grid ── */
+.repo-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+/* ── Pinned / top repo card ── */
+.repo-pin-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 8px;
+    transition: border-color 0.15s;
+    text-decoration: none;
+}
+.repo-pin-card:hover { border-color: var(--border-hover); text-decoration: none; }
+
+.pin-card-header {
+    display: flex; align-items: center; gap: 8px;
+}
+.pin-card-icon {
+    width: 16px; height: 16px; color: var(--text3); flex-shrink: 0;
+}
+.pin-card-name {
+    font-size: 13px; font-weight: 600; color: var(--accent);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex: 1;
+}
+.pin-card-desc {
+    font-size: 11px; color: var(--text2); line-height: 1.5;
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
+}
+.pin-card-footer {
+    display: flex; gap: 10px; align-items: center;
+    font-size: 11px; color: var(--text2); margin-top: auto;
+}
+.pin-card-footer-item { display: flex; align-items: center; gap: 3px; }
+
+/* ── All repos list ── */
+.repo-list-full { display: flex; flex-direction: column; gap: 10px; }
+
+/* ── Empty state ── */
+.profile-empty {
+    padding: 40px 20px; text-align: center; color: var(--text3); font-size: 13px;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+/* ── Member badge ── */
+.member-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(63,185,80,0.1); border: 1px solid rgba(63,185,80,0.25);
+    border-radius: 20px; padding: 3px 10px;
+    font-size: 11px; color: var(--success); font-weight: 500;
+}
+
+@@media (max-width: 900px) {
+    .profile-layout { grid-template-columns: 1fr; }
+    .user-card { position: static; }
+    .user-avatar { max-width: 120px; }
+    .profile-stats { grid-template-columns: repeat(3, 1fr); }
+    .repo-grid { grid-template-columns: 1fr; }
+    }
+    @@media (max-width: 500px) {
+    .profile-stats { grid-template-columns: 1fr 1fr; }
+    .profile-stat:last-child { border-right: none; border-top: 1px solid var(--border); grid-column: span 2; }
+    .follow-stat-val { font-size: 15px; }}
+
+</style>
+}
+
+<div class="container">
+    <div class="profile-layout">
+
+        <!-- ── Left: User card ── -->
+        <aside class="user-card">
+
+            <!-- Avatar -->
+            <div class="user-avatar-wrap">
+                @if (!string.IsNullOrWhiteSpace(Model.AvatarUrl))
+                {
+                    <img class="user-avatar" src="@Model.AvatarUrl"
+                         alt="@Model.Login" loading="lazy"
+                         onerror="this.src=''" />
+                }
+                else
+                {
+                    <div class="user-avatar" style="background:var(--bg3);display:flex;align-items:center;justify-content:center">
+                        <svg width="64" height="64" viewBox="0 0 16 16" fill="var(--text3)">
+                            <path d="M8 8a3 3 0 100-6 3 3 0 000 6zm2-3a2 2 0 11-4 0 2 2 0 014 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
+                        </svg>
+                    </div>
+                }
+            </div>
+
+            <!-- Name + login -->
+            <div class="user-info">
+                @if (!string.IsNullOrWhiteSpace(Model.Name))
+                {
+                    <div class="user-display-name">@Model.Name</div>
+                    <div class="user-login">@@@Model.Login</div>
+                }
+                else
+                {
+                    <div class="user-display-name">@Model.Login</div>
+                }
+
+                <!-- Member badge -->
+                @if (memberFor >= 1)
+                {
+                    <span class="member-badge">
+                        <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/>
+                        </svg>
+                        Member for @memberFor year@(memberFor != 1 ? "s" : "")
+                    </span>
+                }
+            </div>
+
+            <!-- Bio -->
+            @if (!string.IsNullOrWhiteSpace(Model.Bio))
+            {
+                <div class="user-bio">@Model.Bio</div>
+            }
+
+            <!-- Meta info -->
+            <div class="user-meta">
+                @if (!string.IsNullOrWhiteSpace(Model.Company))
+                {
+                    <div class="user-meta-row">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M1.5 14.25c0 .138.112.25.25.25H4v-1.25a.75.75 0 01.75-.75h2.5a.75.75 0 01.75.75v1.25h2.25a.25.25 0 00.25-.25V1.75a.25.25 0 00-.25-.25h-8.5a.25.25 0 00-.25.25v12.5zM1.75 16A1.75 1.75 0 010 14.25V1.75C0 .784.784 0 1.75 0h8.5C11.216 0 12 .784 12 1.75v12.5c0 .085-.006.168-.018.25h2.268a.25.25 0 00.25-.25V8.285a.25.25 0 00-.111-.208l-1.055-.703a.75.75 0 11.832-1.248l1.055.703c.487.325.779.871.779 1.456v5.965A1.75 1.75 0 0114.25 16h-3.5a.75.75 0 01-.197-.026c-.099.017-.2.026-.303.026h-3a.75.75 0 01-.75-.75V14h-1v1.25a.75.75 0 01-.75.75h-3a.75.75 0 01-.75-.75V16z"/>
+                        </svg>
+                        @Model.Company.TrimStart('@')
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.Location))
+                {
+                    <div class="user-meta-row">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M8 0a5.53 5.53 0 00-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 4.095 0 5.555 0 7.318 0 9.366 1.708 11 3.781 11H7.5V8.5a.5.5 0 011 0V11h4.188C14.502 11 16 9.57 16 7.773c0-1.636-1.242-2.969-2.834-3.194C12.923 1.999 10.69 0 8 0z"/>
+                        </svg>
+                        @Model.Location
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.Blog))
+                {
+                    var blogUrl = Model.Blog.StartsWith("http") ? Model.Blog : $"https://{Model.Blog}";
+                    <div class="user-meta-row">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M7.775 3.275a.75.75 0 001.06 1.06l1.25-1.25a2 2 0 112.83 2.83l-2.5 2.5a2 2 0 01-2.83 0 .75.75 0 00-1.06 1.06 3.5 3.5 0 004.95 0l2.5-2.5a3.5 3.5 0 00-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 010-2.83l2.5-2.5a2 2 0 012.83 0 .75.75 0 001.06-1.06 3.5 3.5 0 00-4.95 0l-2.5 2.5a3.5 3.5 0 004.95 4.95l1.25-1.25a.75.75 0 00-1.06-1.06l-1.25 1.25a2 2 0 01-2.83 0z"/>
+                        </svg>
+                        <a href="@blogUrl" target="_blank" rel="noopener">@Model.Blog</a>
+                    </div>
+                }
+                <div class="user-meta-row">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M4.75 0a.75.75 0 01.75.75V2h5V.75a.75.75 0 011.5 0V2h1.25c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0113.25 16H2.75A1.75 1.75 0 011 14.25V3.75C1 2.784 1.784 2 2.75 2H4V.75A.75.75 0 014.75 0zm0 3.5h-2a.25.25 0 00-.25.25V6h11V3.75a.25.25 0 00-.25-.25h-2V4.75a.75.75 0 01-1.5 0V3.5h-5v1.25a.75.75 0 01-1.5 0V3.5zM2.5 7.5v6.75c0 .138.112.25.25.25h10.5a.25.25 0 00.25-.25V7.5h-11z"/>
+                    </svg>
+                    Joined @Model.CreatedAt.ToString("MMM yyyy")
+                </div>
+            </div>
+
+            <!-- Followers / Following / Repos -->
+            <div class="follow-stats">
+                <div class="follow-stat">
+                    <div class="follow-stat-val">@(Model.Followers >= 1000 ? $"{Model.Followers/1000.0:F1}k" : Model.Followers.ToString())</div>
+                    <div class="follow-stat-label">Followers</div>
+                </div>
+                <div class="follow-stat">
+                    <div class="follow-stat-val">@Model.Following</div>
+                    <div class="follow-stat-label">Following</div>
+                </div>
+                <div class="follow-stat">
+                    <div class="follow-stat-val">@Model.PublicRepos</div>
+                    <div class="follow-stat-label">Repos</div>
+                </div>
+            </div>
+
+            <!-- GitHub link -->
+            @if (!string.IsNullOrWhiteSpace(Model.HtmlUrl))
+            {
+                <a class="github-link-btn" href="@Model.HtmlUrl" target="_blank" rel="noopener">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                    </svg>
+                    View on GitHub ↗
+                </a>
+            }
+
+        </aside>
+
+        <!-- ── Right: Main content ── -->
+        <main class="profile-main">
+
+            <!-- Stats strip -->
+            <div class="profile-stats">
+                <div class="profile-stat">
+                    <div class="profile-stat-val">@Model.PublicRepos</div>
+                    <div class="profile-stat-label">Repositories</div>
+                </div>
+                <div class="profile-stat">
+                    <div class="profile-stat-val">@(Model.Followers >= 1000 ? $"{Model.Followers/1000.0:F1}k" : Model.Followers.ToString())</div>
+                    <div class="profile-stat-label">Followers</div>
+                </div>
+                <div class="profile-stat">
+                    @{
+                        var totalStars = Model.Repositories.Sum(r => r.Stars);
+                    }
+                    <div class="profile-stat-val">@(totalStars >= 1000 ? $"{totalStars/1000.0:F1}k" : totalStars.ToString())</div>
+                    <div class="profile-stat-label">Total Stars</div>
+                </div>
+            </div>
+
+            <!-- Top repositories (pinned-style, 2 columns) -->
+            @if (Model.Repositories.Count > 0)
+            {
+                var topRepos = Model.Repositories.OrderByDescending(r => r.Stars).Take(6).ToList();
+
+                <div>
+                    <div class="section-hdr">
+                        <span class="section-hdr-title">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="var(--text3)">
+                                <path d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"/>
+                            </svg>
+                            Top repositories
+                            <span class="section-hdr-count">@topRepos.Count</span>
+                        </span>
+                    </div>
+                    <div class="repo-grid">
+                        @foreach (var repo in topRepos)
+                        {
+                            <a class="repo-pin-card"
+                               asp-controller="Repo" asp-action="Detail"
+                               asp-route-owner="@repo.Owner"
+                               asp-route-name="@repo.Name">
+                                <div class="pin-card-header">
+                                    <svg class="pin-card-icon" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8z"/>
+                                    </svg>
+                                    <span class="pin-card-name">@repo.Name</span>
+                                    @if (repo.IsFork)
+                                    {
+                                        <span class="tag" style="font-size:9px;padding:1px 6px">fork</span>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(repo.Description))
+                                {
+                                    <p class="pin-card-desc">@repo.Description</p>
+                                }
+                                <div class="pin-card-footer">
+                                    @if (!string.IsNullOrWhiteSpace(repo.Language))
+                                    {
+                                        <span class="pin-card-footer-item">
+                                            <span class="lang-dot" style="background:@(repo.LanguageColor ?? "#8b949e")"></span>
+                                            @repo.Language
+                                        </span>
+                                    }
+                                    <span class="pin-card-footer-item">
+                                        <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+                                            <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/>
+                                        </svg>
+                                        @repo.StarsFormatted
+                                    </span>
+                                    @if (repo.Forks > 0)
+                                    {
+                                        <span class="pin-card-footer-item" style="color:var(--text3)">
+                                            <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+                                                <path d="M5 3.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm0 2.122a2.25 2.25 0 10-1.5 0v.878A2.25 2.25 0 005.75 8.5h1.5v2.128a2.251 2.251 0 101.5 0V8.5h1.5a2.25 2.25 0 002.25-2.25v-.878a2.25 2.25 0 10-1.5 0v.878a.75.75 0 01-.75.75h-4.5A.75.75 0 015 6.25v-.878zm3.75 7.378a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm3-8.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/>
+                                            </svg>
+                                            @repo.Forks
+                                        </span>
+                                    }
+                                    <span style="margin-left:auto;font-size:10px;color:var(--text3)">@repo.UpdatedAgo</span>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                </div>
+
+                <!-- All repositories list -->
+                @if (Model.Repositories.Count > 6)
+                {
+                    <div>
+                        <div class="section-hdr">
+                            <span class="section-hdr-title">
+                                <svg width="14" height="14" viewBox="0 0 16 16" fill="var(--text3)">
+                                    <path d="M1.75 1A1.75 1.75 0 000 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0016 13.25v-8.5A1.75 1.75 0 0014.25 3H7.5a.25.25 0 01-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75z"/>
+                                </svg>
+                                All repositories
+                                <span class="section-hdr-count">@Model.Repositories.Count</span>
+                            </span>
+                        </div>
+                        <div class="repo-list-full">
+                            @foreach (var repo in Model.Repositories.Skip(6))
+                            {
+                                @await Html.PartialAsync("_RepoCard", repo)
+                            }
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="profile-empty">
+                    No public repositories yet.
+                </div>
+            }
+
+        </main>
+    </div>
+</div>
