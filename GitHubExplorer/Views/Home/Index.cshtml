@@ -1,249 +1,203 @@
+@model GitHubExplorer.Models.ViewModels.HomeViewModel
 @{
-    ViewData["Title"] = "Discover Open Source";
+    ViewData["Title"]      = "Discover Open Source";
     ViewData["ActivePage"] = "Home";
 }
 
 @section Styles {
 <style>
-    /* ── Hero ── */
-    .hero {
-        text-align: center;
-        padding: 48px 20px 36px;
-        position: relative;
-        overflow: hidden;
-    }
-    .hero::before {
-        content: '';
-        position: absolute; inset: 0; pointer-events: none;
-        background: radial-gradient(ellipse 70% 300px at 50% 0%,
-            rgba(88,166,255,0.07) 0%, transparent 100%);
-    }
-    .hero-grid {
-        position: absolute; inset: 0; pointer-events: none; opacity: 0.35;
-        background-image:
-            linear-gradient(rgba(88,166,255,0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(88,166,255,0.04) 1px, transparent 1px);
-        background-size: 40px 40px;
-    }
-    .hero-inner { position: relative; }
+/* ── Hero ── */
+.hero {
+    text-align: center; padding: 52px 20px 40px;
+    position: relative; overflow: hidden;
+}
+.hero::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 70% 320px at 50% 0%,
+        rgba(88,166,255,0.07) 0%, transparent 100%);
+}
+.hero-grid {
+    position: absolute; inset: 0; pointer-events: none; opacity: 0.3;
+    background-image:
+        linear-gradient(rgba(88,166,255,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(88,166,255,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+.hero-inner { position: relative; }
+.hero-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 14px; border-radius: 20px;
+    background: rgba(88,166,255,0.1); border: 1px solid rgba(88,166,255,0.3);
+    color: var(--accent); font-size: 11px; font-weight: 500;
+    margin-bottom: 22px; letter-spacing: 0.3px;
+}
+.hero-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+.hero h1 {
+    font-size: clamp(28px, 5vw, 44px); font-weight: 700; line-height: 1.15;
+    letter-spacing: -1px; color: var(--text); max-width: 620px; margin: 0 auto 14px;
+}
+.hero h1 .accent { color: var(--accent); position: relative; }
+.hero h1 .accent::after {
+    content: ''; position: absolute; bottom: -3px; left: 0; right: 0;
+    height: 2px; background: linear-gradient(90deg, var(--accent), transparent);
+    border-radius: 2px; opacity: 0.6;
+}
+.hero-sub {
+    color: var(--text2); font-size: 14px; max-width: 480px;
+    margin: 0 auto 26px; line-height: 1.7;
+}
+.hero-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px; }
 
-    .hero-badge {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 4px 14px; border-radius: 20px;
-        background: rgba(88,166,255,0.1); border: 1px solid rgba(88,166,255,0.3);
-        color: var(--accent); font-size: 11px; font-weight: 500;
-        margin-bottom: 20px; letter-spacing: 0.3px;
-    }
-    .hero-badge-dot {
-        width: 6px; height: 6px; border-radius: 50%;
-        background: var(--success);
-    }
+/* Stats strip */
+.hero-stats {
+    display: inline-flex; border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden; background: var(--bg2);
+}
+.stat-item { padding: 10px 26px; text-align: center; border-right: 1px solid var(--border); }
+.stat-item:last-child { border-right: none; }
+.stat-val   { font-size: 19px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; line-height: 1; }
+.stat-label { font-size: 10px; color: var(--text3); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.06em; }
 
-    .hero h1 {
-        font-size: clamp(28px, 5vw, 42px);
-        font-weight: 700; line-height: 1.15;
-        letter-spacing: -1px; color: var(--text);
-        max-width: 600px; margin: 0 auto 12px;
-    }
-    .hero h1 .accent {
-        color: var(--accent); position: relative;
-    }
-    .hero h1 .accent::after {
-        content: '';
-        position: absolute; bottom: -3px; left: 0; right: 0;
-        height: 2px;
-        background: linear-gradient(90deg, var(--accent), transparent);
-        border-radius: 2px; opacity: 0.6;
-    }
+/* ── Search bar ── */
+.search-section {
+    background: var(--bg2); border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border); padding: 28px 20px;
+}
+.search-box { max-width: 700px; margin: 0 auto; }
+.search-inner {
+    display: flex; background: var(--bg3);
+    border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.search-inner:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(88,166,255,0.12); }
+.search-input {
+    flex: 1; background: none; border: none; outline: none;
+    color: var(--text); font-size: 14px; font-family: var(--font); padding: 12px 16px;
+}
+.search-input::placeholder { color: var(--text3); }
+.search-go {
+    background: var(--accent); border: none; color: #0d1117;
+    padding: 0 22px; font-size: 13px; font-weight: 600;
+    font-family: var(--font); cursor: pointer; transition: opacity 0.15s; white-space: nowrap;
+}
+.search-go:hover { opacity: 0.85; }
+.search-hints { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+.hint-label { font-size: 12px; color: var(--text3); }
+.search-hint {
+    background: none; border: 1px solid var(--border); border-radius: 20px;
+    color: var(--text2); padding: 3px 12px; font-size: 12px;
+    cursor: pointer; font-family: var(--font); transition: border-color 0.15s, color 0.15s;
+}
+.search-hint:hover { border-color: var(--accent); color: var(--accent); }
 
-    .hero-sub {
-        color: var(--text2); font-size: 14px;
-        max-width: 460px; margin: 0 auto 24px; line-height: 1.7;
-    }
+/* ── Content grid ── */
+.content-grid { display: grid; grid-template-columns: 1fr 284px; gap: 24px; padding: 32px 0 40px; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.section-title { font-size: 14px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 7px; }
+.section-link { font-size: 12px; color: var(--accent); }
+.section-link:hover { text-decoration: underline; }
 
-    .hero-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 28px; }
+/* ── Quick cards ── */
+.quick-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 32px; }
+.quick-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px; display: block;
+    text-decoration: none; transition: border-color 0.15s, background 0.15s;
+}
+.quick-card:hover { border-color: var(--accent); background: var(--accent-dim); text-decoration: none; }
+.quick-icon  { font-size: 22px; margin-bottom: 8px; display: block; }
+.quick-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.quick-desc  { font-size: 11px; color: var(--text2); line-height: 1.45; }
 
-    /* ── Stats row ── */
-    .hero-stats {
-        display: inline-flex; border: 1px solid var(--border);
-        border-radius: 10px; overflow: hidden; background: var(--bg2);
-    }
-    .stat-item {
-        padding: 10px 24px; text-align: center;
-        border-right: 1px solid var(--border);
-    }
-    .stat-item:last-child { border-right: none; }
-    .stat-val { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; line-height: 1; }
-    .stat-label { font-size: 10px; color: var(--text3); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.06em; }
+/* ── Repo cards (shared styles) ── */
+.repo-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px; display: flex;
+    flex-direction: column; gap: 10px; transition: border-color 0.15s;
+}
+.repo-card:hover { border-color: var(--border-hover); border-left-width: 2px; }
+.repo-card-header { display: flex; align-items: center; gap: 8px; }
+.repo-avatar { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; }
+.repo-fullname {
+    color: var(--accent); font-weight: 600; font-size: 13px;
+    flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.repo-fullname:hover { text-decoration: underline; }
+.repo-fullname strong { font-weight: 700; }
+.repo-star-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text2); padding: 3px 8px; font-size: 11px;
+    font-family: var(--font); cursor: pointer; flex-shrink: 0; transition: all 0.15s;
+}
+.repo-star-btn:hover { border-color: #e3b341; color: #e3b341; }
+.badge-trending {
+    display: inline-flex; align-items: center; gap: 3px;
+    background: rgba(210,153,34,0.15); border: 1px solid rgba(210,153,34,0.4);
+    border-radius: 20px; padding: 2px 8px; font-size: 10px;
+    color: var(--warning); font-weight: 600; flex-shrink: 0;
+}
+.repo-desc {
+    color: var(--text2); font-size: 12px; line-height: 1.55; margin: 0;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.repo-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.repo-footer {
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    padding-top: 10px; border-top: 1px solid var(--border);
+    font-size: 11px; color: var(--text2);
+}
+.repo-footer-item { display: flex; align-items: center; gap: 4px; }
+.repo-updated { margin-left: auto; font-size: 10px; color: var(--text3); }
 
-    /* ── Search section ── */
-    .search-section {
-        background: var(--bg2);
-        border-top: 1px solid var(--border);
-        border-bottom: 1px solid var(--border);
-        padding: 28px 20px;
-    }
-    .search-box {
-        max-width: 680px; margin: 0 auto;
-    }
-    .search-box-inner {
-        display: flex; gap: 0;
-        background: var(--bg3); border: 1px solid var(--border);
-        border-radius: 8px; overflow: hidden;
-        transition: border-color 0.15s, box-shadow 0.15s;
-    }
-    .search-box-inner:focus-within {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(88,166,255,0.12);
-    }
-    .search-main-input {
-        flex: 1; background: none; border: none; outline: none;
-        color: var(--text); font-size: 14px; font-family: var(--font);
-        padding: 12px 16px;
-    }
-    .search-main-input::placeholder { color: var(--text3); }
-    .search-btn {
-        background: var(--accent); border: none; color: #0d1117;
-        padding: 0 20px; font-size: 13px; font-weight: 600;
-        font-family: var(--font); cursor: pointer;
-        transition: opacity 0.15s; white-space: nowrap;
-    }
-    .search-btn:hover { opacity: 0.85; }
+/* ── API error banner ── */
+.api-banner {
+    background: rgba(248,81,73,0.08); border: 1px solid rgba(248,81,73,0.3);
+    border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;
+    display: flex; gap: 10px; align-items: center;
+    font-size: 12px; color: var(--text2);
+}
 
-    .search-hints {
-        display: flex; gap: 8px; flex-wrap: wrap;
-        justify-content: center; margin-top: 12px;
-    }
-    .search-hint {
-        background: none; border: 1px solid var(--border); border-radius: 20px;
-        color: var(--text2); padding: 3px 12px; font-size: 12px;
-        cursor: pointer; font-family: var(--font);
-        transition: border-color 0.15s, color 0.15s;
-    }
-    .search-hint:hover { border-color: var(--accent); color: var(--accent); }
+/* ── Empty state ── */
+.empty-state { text-align: center; padding: 48px 20px; color: var(--text3); font-size: 13px; }
+.empty-state svg { margin-bottom: 12px; opacity: 0.3; display: block; margin-inline: auto; }
 
-    /* ── Content grid ── */
-    .content-grid {
-        display: grid;
-        grid-template-columns: 1fr 300px;
-        gap: 24px;
-        padding: 32px 0 0;
-    }
+/* ── Sidebar ── */
+.sidebar { display: flex; flex-direction: column; gap: 14px; }
+.sidebar-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+.sidebar-title { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+.topic-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 0; border-bottom: 1px solid var(--border);
+    transition: padding-left 0.12s; text-decoration: none;
+}
+.topic-row:last-child { border-bottom: none; }
+.topic-row:hover { padding-left: 4px; text-decoration: none; }
+.topic-name  { font-size: 12px; color: var(--accent); font-weight: 500; }
+.topic-count { font-size: 10px; color: var(--text3); }
+.topic-delta { font-size: 11px; color: var(--success); font-weight: 500; }
+.lang-pills  { display: flex; flex-wrap: wrap; gap: 6px; }
+.lang-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 20px;
+    padding: 4px 10px; font-size: 11px; color: var(--text2); text-decoration: none;
+    transition: all 0.15s;
+}
+.lang-pill:hover { color: var(--text); border-color: var(--border-hover); text-decoration: none; }
+.pstat-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px;
+}
+.pstat-row:last-child { border-bottom: none; }
+.pstat-label { color: var(--text2); }
+.pstat-val   { font-weight: 600; }
 
-    /* ── Section header ── */
-    .section-header {
-        display: flex; align-items: center; justify-content: space-between;
-        margin-bottom: 16px;
-    }
-    .section-title {
-        font-size: 15px; font-weight: 600; color: var(--text);
-        display: flex; align-items: center; gap: 8px;
-    }
-    .section-link { font-size: 12px; color: var(--accent); }
-    .section-link:hover { text-decoration: underline; }
-
-    /* ── Quick nav cards ── */
-    .quick-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 32px; }
-    .quick-card {
-        background: var(--bg2); border: 1px solid var(--border);
-        border-radius: 8px; padding: 16px;
-        cursor: pointer; transition: border-color 0.15s, background 0.15s;
-        text-decoration: none; display: block;
-    }
-    .quick-card:hover { border-color: var(--accent); background: var(--accent-dim); text-decoration: none; }
-    .quick-card-icon { font-size: 20px; margin-bottom: 8px; display: block; }
-    .quick-card-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
-    .quick-card-desc  { font-size: 11px; color: var(--text2); line-height: 1.4; }
-
-    /* ── Repo card ── */
-    .repo-card {
-        background: var(--bg2); border: 1px solid var(--border);
-        border-radius: 8px; padding: 16px;
-        transition: border-color 0.15s;
-        display: flex; flex-direction: column; gap: 10px;
-    }
-    .repo-card:hover { border-color: var(--border-hover); border-left-width: 2px; }
-
-    .repo-card-header { display: flex; align-items: center; gap: 8px; }
-    .repo-avatar { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; }
-    .repo-fullname { color: var(--accent); font-weight: 600; font-size: 13px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .repo-fullname:hover { text-decoration: underline; }
-    .repo-star-btn {
-        display: flex; align-items: center; gap: 4px;
-        background: none; border: 1px solid var(--border); border-radius: 6px;
-        color: var(--text2); padding: 3px 8px; cursor: pointer;
-        font-size: 11px; font-family: var(--font);
-        transition: all 0.15s; flex-shrink: 0;
-    }
-    .repo-star-btn:hover { border-color: #e3b341; color: #e3b341; }
-
-    .repo-desc { color: var(--text2); font-size: 12px; line-height: 1.5;
-        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-
-    .repo-tags { display: flex; gap: 4px; flex-wrap: wrap; }
-
-    .repo-footer {
-        display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
-        padding-top: 10px; border-top: 1px solid var(--border);
-        font-size: 11px; color: var(--text2);
-    }
-    .repo-footer-item { display: flex; align-items: center; gap: 4px; }
-    .repo-updated { margin-left: auto; font-size: 10px; color: var(--text3); }
-
-    .badge-trending {
-        display: inline-flex; align-items: center; gap: 4px;
-        background: rgba(210,153,34,0.15); border: 1px solid rgba(210,153,34,0.4);
-        border-radius: 20px; padding: 2px 8px; font-size: 10px;
-        color: var(--warning); font-weight: 600; flex-shrink: 0;
-    }
-
-    /* ── Sidebar ── */
-    .sidebar { display: flex; flex-direction: column; gap: 14px; }
-    .sidebar-card {
-        background: var(--bg2); border: 1px solid var(--border);
-        border-radius: 8px; padding: 14px 16px;
-    }
-    .sidebar-title { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
-
-    .topic-row {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 6px 0; cursor: pointer;
-        border-bottom: 1px solid var(--border);
-        transition: padding-left 0.1s;
-    }
-    .topic-row:last-child { border-bottom: none; }
-    .topic-row:hover { padding-left: 4px; }
-    .topic-name { font-size: 12px; color: var(--accent); font-weight: 500; }
-    .topic-count { font-size: 11px; color: var(--text3); }
-    .topic-delta { font-size: 11px; color: var(--success); font-weight: 500; }
-
-    .lang-pills { display: flex; flex-wrap: wrap; gap: 6px; }
-    .lang-pill {
-        display: inline-flex; align-items: center; gap: 5px;
-        background: var(--bg3); border: 1px solid var(--border); border-radius: 20px;
-        padding: 4px 10px; font-size: 11px; color: var(--text2); cursor: pointer;
-        transition: all 0.15s;
-    }
-    .lang-pill:hover { color: var(--text); }
-
-    .stat-rows { display: flex; flex-direction: column; gap: 0; }
-    .stat-row {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 12px;
-    }
-    .stat-row:last-child { border-bottom: none; }
-    .stat-row-label { color: var(--text2); }
-    .stat-row-val { font-weight: 600; }
-
-    @@media (max-width: 900px) {
-        .content-grid { grid-template-columns: 1fr; }
-        .quick-nav { grid-template-columns: 1fr 1fr; }
-        .sidebar { display: none; }
-    }
+@@media (max-width: 900px) { .content-grid { grid-template-columns: 1fr; } .sidebar { display: none; } .quick-grid { grid-template-columns: 1fr 1fr; } }
+@@media (max-width: 540px) { .quick-grid { grid-template-columns: 1fr; } .hero-stats .stat-item { padding: 8px 14px; } }
 </style>
 }
 
-<!-- ── Hero ──────────────────────────────────────── -->
+<!-- HERO -->
 <section class="hero fade-up">
     <div class="hero-grid"></div>
     <div class="hero-inner">
@@ -251,69 +205,43 @@
             <span class="hero-badge-dot live-dot"></span>
             Live · Now indexing 400M+ repositories
         </div>
-
-        <h1>
-            Discover the best<br>
-            <span class="accent">open-source</span> projects
-        </h1>
-
+        <h1>Discover the best<br><span class="accent">open-source</span> projects</h1>
         <p class="hero-sub">
-            Search, filter, and explore GitHub repositories with powerful filters and beautiful insights.
+            Search, filter, and explore GitHub repositories with powerful filters and beautiful insights — all in one place.
         </p>
-
         <div class="hero-actions">
-            <a class="btn btn-primary" asp-controller="Explore" asp-action="Index">
-                Start Exploring →
-            </a>
-            <a class="btn btn-outline" asp-controller="Trending" asp-action="Index">
-                View Trending
-            </a>
-            <a class="btn btn-outline" asp-controller="Compare" asp-action="Index">
-                Compare Repos
-            </a>
+            <a class="btn btn-primary"  asp-controller="Explore"  asp-action="Index">Start Exploring →</a>
+            <a class="btn btn-outline"  asp-controller="Trending" asp-action="Index">🔥 View Trending</a>
+            <a class="btn btn-outline"  asp-controller="Compare"  asp-action="Index">⚖️ Compare Repos</a>
         </div>
-
         <div class="hero-stats">
-            <div class="stat-item">
-                <div class="stat-val">400M+</div>
-                <div class="stat-label">Repositories</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-val">50+</div>
-                <div class="stat-label">Languages</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-val">100M+</div>
-                <div class="stat-label">Developers</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-val">Real-time</div>
-                <div class="stat-label">Updated</div>
-            </div>
+            <div class="stat-item"><div class="stat-val" id="stat-repos">400M+</div><div class="stat-label">Repositories</div></div>
+            <div class="stat-item"><div class="stat-val">50+</div><div class="stat-label">Languages</div></div>
+            <div class="stat-item"><div class="stat-val">100M+</div><div class="stat-label">Developers</div></div>
+            <div class="stat-item"><div class="stat-val" style="color:var(--success)">Live</div><div class="stat-label">Updated</div></div>
         </div>
     </div>
 </section>
 
-<!-- ── Search ─────────────────────────────────────── -->
+<!-- SEARCH BAR -->
 <section class="search-section">
     <div class="search-box">
-        <div class="search-box-inner">
-            <input class="search-main-input" type="text" id="hero-search"
-                   placeholder="Search for repositories, e.g. &quot;react dashboard&quot; or &quot;rust async&quot;"
-                   onkeydown="if(event.key==='Enter') goSearch()" />
-            <button class="search-btn" onclick="goSearch()">Search</button>
+        <div class="search-inner">
+            <input class="search-input" type="text" id="hero-search" autocomplete="off"
+                   placeholder='Search repos, e.g. "react dashboard" or "rust async"'/>
+            <button class="search-go" onclick="goSearch()">Search →</button>
         </div>
         <div class="search-hints">
-            <span>Try:</span>
+            <span class="hint-label">Try:</span>
             <button class="search-hint" onclick="setSearch('machine learning python')">machine learning python</button>
             <button class="search-hint" onclick="setSearch('react dashboard')">react dashboard</button>
-            <button class="search-hint" onclick="setSearch('rust async')">rust async</button>
+            <button class="search-hint" onclick="setSearch('rust async runtime')">rust async runtime</button>
             <button class="search-hint" onclick="setSearch('dotnet mvc')">dotnet mvc</button>
         </div>
     </div>
 </section>
 
-<!-- ── Main content ───────────────────────────────── -->
+<!-- MAIN CONTENT -->
 <div class="container">
     <div class="content-grid">
         <main>
@@ -321,136 +249,99 @@
             <div class="section-header">
                 <span class="section-title">Browse by category</span>
             </div>
-            <div class="quick-nav">
+            <div class="quick-grid">
                 <a class="quick-card" asp-controller="Trending" asp-action="Index">
-                    <span class="quick-card-icon">🔥</span>
-                    <div class="quick-card-title">Trending Today</div>
-                    <div class="quick-card-desc">Most starred repos in the last 24 hours</div>
+                    <span class="quick-icon">🔥</span>
+                    <div class="quick-title">Trending Today</div>
+                    <div class="quick-desc">Most starred repos in the last 24 hours</div>
                 </a>
                 <a class="quick-card" asp-controller="Explore" asp-action="Index" asp-route-topic="good-first-issue">
-                    <span class="quick-card-icon">🌱</span>
-                    <div class="quick-card-title">Beginner Friendly</div>
-                    <div class="quick-card-desc">Great repos to start contributing</div>
+                    <span class="quick-icon">🌱</span>
+                    <div class="quick-title">Beginner Friendly</div>
+                    <div class="quick-desc">Great projects to start contributing to</div>
                 </a>
                 <a class="quick-card" asp-controller="Explore" asp-action="Index" asp-route-sort="updated">
-                    <span class="quick-card-icon">⚡</span>
-                    <div class="quick-card-title">Recently Active</div>
-                    <div class="quick-card-desc">Repos with latest commits today</div>
+                    <span class="quick-icon">⚡</span>
+                    <div class="quick-title">Recently Active</div>
+                    <div class="quick-desc">Repositories with commits pushed today</div>
+                </a>
+                <a class="quick-card" asp-controller="Explore" asp-action="Index" asp-route-language="C#">
+                    <span class="quick-icon">💻</span>
+                    <div class="quick-title">C# Ecosystem</div>
+                    <div class="quick-desc">Top .NET and C# open-source projects</div>
+                </a>
+                <a class="quick-card" asp-controller="Explore" asp-action="Index" asp-route-minStars="10000">
+                    <span class="quick-icon">⭐</span>
+                    <div class="quick-title">Most Starred</div>
+                    <div class="quick-desc">Repos with over 10k GitHub stars</div>
+                </a>
+                <a class="quick-card" asp-controller="Compare" asp-action="Index">
+                    <span class="quick-icon">⚖️</span>
+                    <div class="quick-title">Compare Repos</div>
+                    <div class="quick-desc">Side-by-side stats for any two repos</div>
                 </a>
             </div>
 
-            <!-- Trending repos preview -->
+            <!-- API error banner -->
+            @if (!Model.ApiAvailable)
+            {
+                <div class="api-banner">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="var(--danger)">
+                        <path d="M8 1a7 7 0 100 14A7 7 0 008 1zM0 8a8 8 0 1116 0A8 8 0 010 8zm7-3a1 1 0 012 0v3.5a.5.5 0 01-1 0V5zm1 6a1 1 0 110-2 1 1 0 010 2z"/>
+                    </svg>
+                    GitHub API is temporarily unavailable. Showing cached or fallback data.
+                    <a asp-controller="Explore" asp-action="Index" style="margin-left:auto;font-size:11px">Try explore →</a>
+                </div>
+            }
+
+            <!-- Trending repos -->
             <div class="section-header">
                 <span class="section-title">
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="var(--warning)">
-                        <path d="M1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0zM8 0a8 8 0 100 16A8 8 0 008 0zM6.379 5.227A.25.25 0 016.75 5h2.5a.25.25 0 01.25.25v.75a.25.25 0 01-.25.25h-.75v4.25a.25.25 0 01-.25.25h-.75a.25.25 0 01-.25-.25V6.25h-.75a.25.25 0 01-.25-.25v-.75a.25.25 0 01.129-.023z"/>
+                        <path fill-rule="evenodd" d="M0 0h1v15h15v1H0V0zm10 3.5a.5.5 0 01.5-.5h4a.5.5 0 01.5.5v4a.5.5 0 01-1 0V4.9l-3.613 4.417a.5.5 0 01-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 01-.808-.588l4-5.5a.5.5 0 01.758-.06l2.609 2.61L13.445 4H10.5a.5.5 0 01-.5-.5z"/>
                     </svg>
                     Trending repositories
                 </span>
                 <a class="section-link" asp-controller="Trending" asp-action="Index">See all →</a>
             </div>
 
-            <div style="display:flex; flex-direction:column; gap:10px;">
-                @{
-                    var demoRepos = new[]
+            @if (Model.TrendingRepos.Count > 0)
+            {
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    @foreach (var repo in Model.TrendingRepos)
                     {
-                        new { Owner="facebook",   Name="react",   Desc="The library for web and native user interfaces.", Lang="JavaScript", LangColor="#f1e05a", Stars="224k", Forks="45.8k", License="MIT", Updated="2h ago",  Trending=false, Topics=new[]{"javascript","frontend","ui"} },
-                        new { Owner="microsoft",  Name="vscode",  Desc="Visual Studio Code — lightweight but powerful source code editor.", Lang="TypeScript", LangColor="#3178c6", Stars="165k", Forks="29.1k", License="MIT", Updated="4h ago",  Trending=false, Topics=new[]{"typescript","editor","electron"} },
-                        new { Owner="torvalds",   Name="linux",   Desc="Linux kernel source tree. The open-source Unix-like operating system.", Lang="C", LangColor="#555555", Stars="185k", Forks="54.2k", License="GPL-2.0", Updated="3h ago",  Trending=true, Topics=new[]{"c","kernel","os"} },
-                        new { Owner="golang",     Name="go",      Desc="The Go programming language — simple, reliable, and efficient software.", Lang="Go", LangColor="#00ADD8", Stars="122k", Forks="17.4k", License="BSD-3-Clause", Updated="6h ago",  Trending=false, Topics=new[]{"go","compiler","language"} },
-                    };
-                }
+                        @await Html.PartialAsync("_RepoCard", repo)
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <svg width="32" height="32" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/>
+                    </svg>
+                    <p>No trending repos available right now.</p>
+                    <a class="btn btn-outline" asp-controller="Explore" asp-action="Index" style="margin-top:12px;display:inline-flex">
+                        Browse all repos →
+                    </a>
+                </div>
+            }
 
-                @foreach (var r in demoRepos)
-                {
-                    <div class="repo-card">
-                        <div class="repo-card-header">
-                            <img class="repo-avatar"
-                                 src="https://github.com/@r.Owner.png?size=40"
-                                 alt="@r.Owner"
-                                 onerror="this.src='/img/default-avatar.png'" />
-                            <a class="repo-fullname" asp-controller="Repo" asp-action="Detail"
-                               asp-route-owner="@r.Owner" asp-route-name="@r.Name">
-                                @r.Owner/@r.Name
-                            </a>
-                            @if (r.Trending)
-                            {
-                                <span class="badge-trending">🔥 Trending</span>
-                            }
-                            <button class="repo-star-btn">
-                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2">
-                                    <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/>
-                                </svg>
-                                @r.Stars
-                            </button>
-                        </div>
-
-                        <p class="repo-desc">@r.Desc</p>
-
-                        <div class="repo-tags">
-                            @foreach (var t in r.Topics)
-                            {
-                                <span class="tag">@t</span>
-                            }
-                        </div>
-
-                        <div class="repo-footer">
-                            <span class="repo-footer-item">
-                                <span class="lang-dot" style="background:@r.LangColor"></span>
-                                @r.Lang
-                            </span>
-                            <span class="repo-footer-item">
-                                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-                                    <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/>
-                                </svg>
-                                @r.Stars
-                            </span>
-                            <span class="repo-footer-item">
-                                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" opacity="0.6">
-                                    <path d="M5 3.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm0 2.122a2.25 2.25 0 10-1.5 0v.878A2.25 2.25 0 005.75 8.5h1.5v2.128a2.251 2.251 0 101.5 0V8.5h1.5a2.25 2.25 0 002.25-2.25v-.878a2.25 2.25 0 10-1.5 0v.878a.75.75 0 01-.75.75h-4.5A.75.75 0 015 6.25v-.878zm3.75 7.378a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm3-8.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/>
-                                </svg>
-                                @r.Forks
-                            </span>
-                            <span style="background:var(--bg3);padding:1px 7px;border-radius:20px;font-size:10px;color:var(--text3)">
-                                @r.License
-                            </span>
-                            <span class="repo-updated">Updated @r.Updated</span>
-                        </div>
-                    </div>
-                }
-            </div>
-
-            <div style="text-align:center; margin-top:24px;">
-                <a class="btn btn-outline" asp-controller="Explore" asp-action="Index">
-                    Browse all repositories →
-                </a>
+            <div style="text-align:center;margin-top:24px;">
+                <a class="btn btn-outline" asp-controller="Explore" asp-action="Index">Browse all repositories →</a>
             </div>
         </main>
 
-        <!-- ── Sidebar ── -->
+        <!-- SIDEBAR -->
         <aside class="sidebar">
-
-            <!-- Trending Topics -->
             <div class="sidebar-card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
                     <span class="sidebar-title" style="margin:0">Trending Topics</span>
-                    <span style="font-size:10px;color:var(--text3)" class="live-dot">● live</span>
+                    <span style="font-size:10px;color:var(--success)" class="live-dot">● live</span>
                 </div>
-                @{
-                    var topics = new[]
-                    {
-                        new { Tag="machine-learning", Count="48.2k", Delta="+2.3k" },
-                        new { Tag="react",            Count="32.1k", Delta="+890"  },
-                        new { Tag="python",           Count="28.7k", Delta="+1.1k" },
-                        new { Tag="docker",           Count="21.3k", Delta="+430"  },
-                        new { Tag="api",              Count="19.8k", Delta="+670"  },
-                        new { Tag="cli",              Count="14.5k", Delta="+210"  },
-                    };
-                }
-                @foreach (var topic in topics)
+                @foreach (var topic in Model.TrendingTopics)
                 {
-                    <a class="topic-row" asp-controller="Explore" asp-action="Index"
-                       asp-route-topic="@topic.Tag" style="text-decoration:none">
+                    <a class="topic-row" asp-controller="Explore" asp-action="Index" asp-route-topic="@topic.Tag">
                         <div>
                             <div class="topic-name">#@topic.Tag</div>
                             <div class="topic-count">@topic.Count repos</div>
@@ -460,56 +351,48 @@
                 }
             </div>
 
-            <!-- Popular Languages -->
             <div class="sidebar-card">
                 <div class="sidebar-title">Popular Languages</div>
                 <div class="lang-pills">
-                    @{
-                        var langs = new[]
-                        {
-                            new { Name="JavaScript", Color="#f1e05a" },
-                            new { Name="Python",     Color="#3572A5" },
-                            new { Name="TypeScript", Color="#3178c6" },
-                            new { Name="Go",         Color="#00ADD8" },
-                            new { Name="Rust",       Color="#dea584" },
-                            new { Name="C#",         Color="#178600" },
-                            new { Name="Java",       Color="#b07219" },
-                            new { Name="Kotlin",     Color="#A97BFF" },
-                        };
-                    }
-                    @foreach (var lang in langs)
+                    @foreach (var lang in new[] {
+                        ("JavaScript","#f1e05a"),("Python","#3572A5"),("TypeScript","#3178c6"),
+                        ("Go","#00ADD8"),("Rust","#dea584"),("C#","#178600"),
+                        ("Java","#b07219"),("Kotlin","#A97BFF"),("Swift","#F05138"),("PHP","#4F5D95")
+                    })
                     {
-                        <a class="lang-pill" asp-controller="Explore" asp-action="Index"
-                           asp-route-language="@lang.Name" style="text-decoration:none">
-                            <span class="lang-dot" style="background:@lang.Color"></span>
-                            @lang.Name
+                        <a class="lang-pill" asp-controller="Explore" asp-action="Index" asp-route-language="@lang.Item1">
+                            <span class="lang-dot" style="background:@lang.Item2"></span>
+                            @lang.Item1
                         </a>
                     }
                 </div>
             </div>
 
-            <!-- Platform Stats -->
             <div class="sidebar-card">
                 <div class="sidebar-title">Platform Stats</div>
-                <div class="stat-rows">
-                    <div class="stat-row">
-                        <span class="stat-row-label">Repositories indexed</span>
-                        <span class="stat-row-val" style="color:var(--accent)">400M+</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-row-label">Active developers</span>
-                        <span class="stat-row-val" style="color:var(--success)">100M+</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-row-label">New repos today</span>
-                        <span class="stat-row-val" style="color:var(--warning)">12,483</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-row-label">Languages tracked</span>
-                        <span class="stat-row-val" style="color:var(--text)">583</span>
-                    </div>
-                </div>
+                <div class="pstat-row"><span class="pstat-label">Repositories indexed</span><span class="pstat-val" style="color:var(--accent)">400M+</span></div>
+                <div class="pstat-row"><span class="pstat-label">Active developers</span><span class="pstat-val" style="color:var(--success)">100M+</span></div>
+                <div class="pstat-row"><span class="pstat-label">New repos today</span><span class="pstat-val" style="color:var(--warning)">12,483</span></div>
+                <div class="pstat-row"><span class="pstat-label">Languages tracked</span><span class="pstat-val">583</span></div>
             </div>
+
+            @if (User.Identity?.IsAuthenticated != true)
+            {
+                <div class="sidebar-card" style="text-align:center;border-color:rgba(88,166,255,0.3)">
+                    <div style="font-size:22px;margin-bottom:8px">🔖</div>
+                    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">Save your favorites</div>
+                    <div style="font-size:11px;color:var(--text2);margin-bottom:14px;line-height:1.5">
+                        Sign in with GitHub to bookmark repos and create collections.
+                    </div>
+                    <a class="btn btn-primary" asp-controller="Account" asp-action="SignIn"
+                       style="width:100%;justify-content:center;font-size:12px">
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                        </svg>
+                        Sign in with GitHub
+                    </a>
+                </div>
+            }
         </aside>
     </div>
 </div>
@@ -521,11 +404,25 @@
         if (q) window.location = '/explore?query=' + encodeURIComponent(q);
     }
     function setSearch(val) {
-        document.getElementById('hero-search').value = val;
-        document.getElementById('hero-search').focus();
+        const el = document.getElementById('hero-search');
+        el.value = val; el.focus();
     }
     document.getElementById('hero-search').addEventListener('keydown', e => {
         if (e.key === 'Enter') goSearch();
     });
+
+    // Animated stat counter
+    const statEl = document.getElementById('stat-repos');
+    new IntersectionObserver(entries => {
+        if (!entries[0].isIntersecting) return;
+        let start = Date.now();
+        const tick = () => {
+            const p = Math.min((Date.now() - start) / 1200, 1);
+            const v = Math.floor((1 - Math.pow(1-p, 3)) * 400);
+            statEl.textContent = v + 'M+';
+            if (p < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+    }).observe(statEl);
 </script>
 }

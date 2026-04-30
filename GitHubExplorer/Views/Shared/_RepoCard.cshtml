@@ -1,0 +1,135 @@
+@model GitHubExplorer.Models.ViewModels.RepositoryViewModel
+@* 
+    Usage:
+      @await Html.PartialAsync("_RepoCard", repo)
+    
+    Optional ViewData:
+      ViewData["ShowFavorite"] = true   — shows favorite button (requires auth)
+      ViewData["Compact"]      = true   — smaller padding, fewer topics
+*@
+
+@{
+    bool showFav = ViewData["ShowFavorite"] is true;
+    bool compact = ViewData["Compact"]      is true;
+    var pad      = compact ? "12px" : "16px";
+}
+
+<div class="repo-card" style="padding:@pad">
+    <!-- Header: avatar + name + trending badge + star btn -->
+    <div class="repo-card-header">
+        <img class="repo-avatar"
+             src="@Model.OwnerAvatarUrl"
+             alt="@Model.Owner"
+             loading="lazy"
+             onerror="this.style.display='none'" />
+
+        <a class="repo-fullname"
+           asp-controller="Repo" asp-action="Detail"
+           asp-route-owner="@Model.Owner"
+           asp-route-name="@Model.Name"
+           title="@Model.FullName">
+            @Model.Owner/<strong>@Model.Name</strong>
+        </a>
+
+        @if (Model.IsTrending)
+        {
+            <span class="badge-trending">🔥 Trending</span>
+        }
+
+        @if (showFav && User.Identity?.IsAuthenticated == true)
+        {
+            <form asp-controller="Account" asp-action="ToggleFavorite" method="post"
+                  style="display:inline" class="fav-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="owner"       value="@Model.Owner" />
+                <input type="hidden" name="name"        value="@Model.Name" />
+                <input type="hidden" name="description" value="@Model.Description" />
+                <input type="hidden" name="language"    value="@Model.Language" />
+                <input type="hidden" name="stars"       value="@Model.Stars" />
+                <input type="hidden" name="htmlUrl"     value="@Model.HtmlUrl" />
+                <input type="hidden" name="avatarUrl"   value="@Model.OwnerAvatarUrl" />
+                <button type="submit" class="repo-star-btn fav-btn"
+                        title="Add to favorites">
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none"
+                         stroke="currentColor" stroke-width="1.2">
+                        <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/>
+                    </svg>
+                    @Model.StarsFormatted
+                </button>
+            </form>
+        }
+        else
+        {
+            <span class="repo-star-btn" style="cursor:default">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"
+                     stroke="currentColor" stroke-width="1.2">
+                    <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/>
+                </svg>
+                @Model.StarsFormatted
+            </span>
+        }
+    </div>
+
+    <!-- Description -->
+    @if (!string.IsNullOrWhiteSpace(Model.Description))
+    {
+        <p class="repo-desc">@Model.Description</p>
+    }
+
+    <!-- Topics -->
+    @if (Model.Topics.Count > 0)
+    {
+        <div class="repo-tags">
+            @foreach (var topic in Model.Topics.Take(compact ? 3 : 5))
+            {
+                <a class="tag"
+                   asp-controller="Explore" asp-action="Index"
+                   asp-route-topic="@topic"
+                   style="text-decoration:none">@topic</a>
+            }
+            @if (Model.Topics.Count > (compact ? 3 : 5))
+            {
+                <span class="tag" style="opacity:0.6">
+                    +@(Model.Topics.Count - (compact ? 3 : 5)) more
+                </span>
+            }
+        </div>
+    }
+
+    <!-- Footer: lang · stars · forks · license · updated -->
+    <div class="repo-footer">
+        @if (!string.IsNullOrWhiteSpace(Model.Language))
+        {
+            <span class="repo-footer-item">
+                <span class="lang-dot" style="background:@(Model.LanguageColor ?? "#8b949e")"></span>
+                @Model.Language
+            </span>
+        }
+
+        <span class="repo-footer-item">
+            <!-- Star icon -->
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/>
+            </svg>
+            @Model.StarsFormatted
+        </span>
+
+        <span class="repo-footer-item">
+            <!-- Fork icon -->
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" opacity="0.6">
+                <path d="M5 3.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm0 2.122a2.25 2.25 0 10-1.5 0v.878A2.25 2.25 0 005.75 8.5h1.5v2.128a2.251 2.251 0 101.5 0V8.5h1.5a2.25 2.25 0 002.25-2.25v-.878a2.25 2.25 0 10-1.5 0v.878a.75.75 0 01-.75.75h-4.5A.75.75 0 015 6.25v-.878zm3.75 7.378a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm3-8.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/>
+            </svg>
+            @(Model.Forks >= 1000 ? $"{Model.Forks / 1000.0:F1}k" : Model.Forks.ToString())
+        </span>
+
+        @if (!string.IsNullOrWhiteSpace(Model.License))
+        {
+            <span style="background:var(--bg3);padding:1px 7px;border-radius:20px;
+                         font-size:10px;color:var(--text3)">
+                @Model.License
+            </span>
+        }
+
+        <span class="repo-updated">Updated @Model.UpdatedAgo</span>
+    </div>
+</div>
